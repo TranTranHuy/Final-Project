@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
+import Swal from 'sweetalert2'; // [MỚI] Import thư viện thông báo
 
 const RecipeDetail = () => {
   const { id } = useParams();
@@ -25,6 +26,55 @@ const RecipeDetail = () => {
     };
     fetchRecipe();
   }, [id]);
+
+  // [MỚI] Hàm xử lý khi bấm nút "Thêm vào giỏ"
+  const handleAddToCart = async (ing) => {
+    const token = localStorage.getItem('token');
+    
+    // Kiểm tra đăng nhập
+    if (!token) {
+        Swal.fire({
+            title: 'Chú ý',
+            text: 'Bạn cần đăng nhập để mua nguyên liệu!',
+            icon: 'warning',
+            confirmButtonColor: '#ff6b00',
+            confirmButtonText: 'Đăng nhập ngay'
+        }).then((result) => {
+            if (result.isConfirmed) navigate('/login');
+        });
+        return;
+    }
+
+    try {
+        // Gửi thông tin nguyên liệu, giá và người bán xuống giỏ hàng
+        await axios.post('http://localhost:5000/api/cart/add', {
+            name: ing.name,
+            price: ing.price,
+            image: ing.image,
+            sellerId: recipe.user?._id || null, // Lấy ID của người viết bài
+            sellerName: recipe.user?.username || 'Ẩn danh',
+            recipeId: recipe._id
+        }, {
+            headers: { 'x-auth-token': token }
+        });
+
+        // Thông báo thành công kiểu Toast (nhỏ gọn góc phải)
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500
+        });
+        Toast.fire({
+            icon: 'success',
+            title: `Đã thêm ${ing.name} vào giỏ!`
+        });
+
+    } catch (err) {
+        console.error('Lỗi thêm giỏ hàng:', err);
+        Swal.fire('Lỗi', 'Không thể thêm vào giỏ hàng. Vui lòng thử lại!', 'error');
+    }
+  };
 
   if (loading) return <p style={{ textAlign: 'center', marginTop: '100px', fontSize: '18px' }}>Đang tải chi tiết công thức...</p>;
   if (error) return <p style={{ textAlign: 'center', marginTop: '100px', color: 'red', fontSize: '18px' }}>{error}</p>;
@@ -136,7 +186,14 @@ const RecipeDetail = () => {
                                     <p style={{ margin: '0', color: '#ff6b00', fontWeight: 'bold', fontSize: '13px' }}>
                                         {ing.price ? parseInt(ing.price).toLocaleString() : 0} đ
                                     </p>
-                                    <button style={{ width: '100%', marginTop: '8px', padding: '5px', background: '#333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px' }}>
+                                    
+                                    {/* [SỬA ĐỔI] Gắn sự kiện onClick vào nút Giỏ Hàng */}
+                                    <button 
+                                        onClick={() => handleAddToCart(ing)}
+                                        style={{ width: '100%', marginTop: '8px', padding: '5px', background: '#333', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', transition: 'background 0.2s' }}
+                                        onMouseEnter={(e) => e.target.style.background = '#ff6b00'}
+                                        onMouseLeave={(e) => e.target.style.background = '#333'}
+                                    >
                                         + Giỏ hàng
                                     </button>
                                 </div>

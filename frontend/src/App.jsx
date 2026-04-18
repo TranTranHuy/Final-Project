@@ -1,7 +1,7 @@
-// src/App.jsx - Phiên bản đầy đủ với quản lý công thức (edit/delete)
+// src/App.jsx - Phiên bản đầy đủ với quản lý công thức (edit/delete) + TÌM KIẾM & LỌC
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Routes, Route, useLocation } from 'react-router-dom'; // Chỉ import Routes + Route + useLocation
+import { Routes, Route, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import RecipeCard from './components/RecipeCard';
 import CreateRecipe from './components/CreateRecipe';
@@ -11,21 +11,45 @@ import RecipeDetail from './components/RecipeDetail';
 import ManageCategories from './components/ManageCategories';
 import Login from './components/Login';
 import Register from './components/Register';
-// [MỚI] Import trang duyệt bài Admin
+import Marketplace from "./components/Marketplace";
 import AdminModeration from './components/AdminModeration';
-import ManageIngredients from './components/ManageIngredients'; // [MỚI] Import trang này
+import ManageIngredients from './components/ManageIngredients';
+import Cart from './components/Cart';
+import Checkout from './components/Checkout';
+import MyOrders from './components/MyOrders';
+import Inbox from './components/Inbox';
 
 const App = () => {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // [MỚI] State cho Tìm kiếm và Lọc
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('');
+  const [categories, setCategories] = useState([]);
+
   const location = useLocation();
 
+  // [MỚI] Lấy danh sách danh mục (để đưa vào ô Select)
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const res = await axios.get('http://localhost:5000/api/categories');
+        setCategories(res.data);
+      } catch (err) {
+        console.error('Lỗi tải danh mục:', err);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Lấy danh sách công thức (Có áp dụng tìm kiếm và lọc)
   useEffect(() => {
     const fetchRecipes = async () => {
       setLoading(true);
       try {
-        const response = await axios.get('http://localhost:5000/api/recipes');
+        // [ĐÃ SỬA] Gắn thêm searchTerm và selectedCategory vào URL
+        const response = await axios.get(`http://localhost:5000/api/recipes?search=${searchTerm}&category=${selectedCategory}`);
         setRecipes(response.data);
       } catch (error) {
         console.error('Error fetching recipes:', error);
@@ -33,8 +57,14 @@ const App = () => {
         setLoading(false);
       }
     };
-    fetchRecipes();
-  }, [location.pathname]); // Fetch lại mỗi khi route thay đổi (tự cập nhật sau tạo/sửa/xóa)
+
+    // Dùng setTimeout để đợi người dùng gõ xong mới gọi API (chống lag)
+    const delayDebounceFn = setTimeout(() => {
+        fetchRecipes();
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [location.pathname, searchTerm, selectedCategory]); 
 
   return (
     <>
@@ -47,13 +77,37 @@ const App = () => {
             path="/"
             element={
               <>
-                <h2 style={{ textAlign: 'center', margin: '40px 0 30px' }}>Featured Recipes</h2>
+                <h2 style={{ textAlign: 'center', margin: '40px 0 30px', color: '#333' }}>🍳 Khám phá Công thức</h2>
+
+                {/* [MỚI] THANH TÌM KIẾM VÀ LỌC DANH MỤC */}
+                <div style={{ display: 'flex', gap: '15px', marginBottom: '40px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    {/* Ô tìm kiếm */}
+                    <input 
+                        type="text" 
+                        placeholder="🔍 Tìm công thức nấu ăn (VD: Gà rán, Bò né...)" 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{ padding: '12px 20px', borderRadius: '30px', border: '1px solid #ccc', minWidth: '350px', outline: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
+                    />
+                    
+                    {/* Bộ lọc danh mục */}
+                    <select 
+                        value={selectedCategory} 
+                        onChange={(e) => setSelectedCategory(e.target.value)}
+                        style={{ padding: '12px 20px', borderRadius: '30px', border: '1px solid #ccc', cursor: 'pointer', outline: 'none', backgroundColor: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', minWidth: '200px' }}
+                    >
+                        <option value="">📁 Tất cả danh mục</option>
+                        {categories.map(cat => (
+                            <option key={cat._id} value={cat.name}>{cat.name}</option>
+                        ))}
+                    </select>
+                </div>
 
                 {loading ? (
-                  <p style={{ textAlign: 'center', fontSize: '18px' }}>Đang tải công thức...</p>
+                  <p style={{ textAlign: 'center', fontSize: '18px', color: '#888' }}>Đang tải công thức...</p>
                 ) : recipes.length === 0 ? (
-                  <p style={{ textAlign: 'center', color: '#666', fontSize: '18px' }}>
-                    Chưa có công thức nào. Hãy tạo mới nhé! 🍳
+                  <p style={{ textAlign: 'center', color: '#666', fontSize: '18px', padding: '40px', background: '#f9f9f9', borderRadius: '12px' }}>
+                    Không tìm thấy công thức nào phù hợp. 🍳
                   </p>
                 ) : (
                   <div
@@ -72,27 +126,20 @@ const App = () => {
             }
           />
 
-          {/* Trang tạo công thức mới */}
           <Route path="/create-recipe" element={<CreateRecipe />} />
-
-          {/* Trang quản lý công thức (edit/delete) */}
           <Route path="/manage-recipes" element={<ManageRecipes />} />
-
-          {/* Trang sửa công thức */}
           <Route path="/edit-recipe/:id" element={<EditRecipe />} />
-
-          {/* Trang chi tiết công thức */}
           <Route path="/recipe/:id" element={<RecipeDetail />} />
-          {/* Trang quản lý danh mục */}
           <Route path="/manage-categories" element={<ManageCategories />} />
-          {/* Trang đăng nhập */}
           <Route path="/login" element={<Login />} />
-          {/* Trang đăng ký */}
           <Route path="/register" element={<Register />} />
-          {/* [MỚI] Thêm Route cho Admin */}
           <Route path="/admin/moderation" element={<AdminModeration />} />
-          {/* [MỚI] Route Quản lý Kho nguyên liệu */}
           <Route path="/admin/ingredients" element={<ManageIngredients />} />
+          <Route path="/marketplace" element={<Marketplace />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/my-orders" element={<MyOrders />} />
+          <Route path="/messages" element={<Inbox />} />
         </Routes>
       </div>
     </>

@@ -31,11 +31,23 @@ const cpUpload = upload.fields([
     { name: 'ingredientImages', maxCount: 20 }
 ]);
 
-// 1. GET ALL: Lấy danh sách bài viết
+// 1. GET ALL: Lấy danh sách bài viết (Có hỗ trợ Tìm kiếm & Lọc)
 router.get('/', async (req, res) => {
   try {
-      const { status } = req.query;
+      const { status, search, category } = req.query;
+      
+      // Mặc định chỉ lấy bài đã duyệt
       let query = { status: status || 'approved' }; 
+
+      // Nếu có từ khóa tìm kiếm (Lọc theo tiêu đề, không phân biệt hoa thường)
+      if (search) {
+          query.title = { $regex: search, $options: 'i' };
+      }
+
+      // Nếu có chọn danh mục
+      if (category) {
+          query.category = category;
+      }
 
       const recipes = await Recipe.find(query)
           .populate('user', 'username email') 

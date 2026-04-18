@@ -75,6 +75,23 @@ const Header = () => {
               + Create new recipe
             </Link>
 
+             <Link to="/marketplace" style={{ backgroundColor: '#ff6b00', color: 'white', padding: '10px 24px', borderRadius: '9999px', fontWeight: 'bold', textDecoration: 'none' }}>
+              Marketplace
+            </Link>
+
+            {/* Icon Giỏ hàng (Nằm cạnh nút User) */}
+            <Link to="/cart" style={{ textDecoration: 'none', fontSize: '22px', marginRight: '15px', position: 'relative' }}>
+                🛒
+                {/* (Nâng cao: Nếu muốn hiện số lượng đỏ đỏ trên giỏ hàng, mình sẽ làm ở bước sau) */}
+            </Link>
+
+            {/* [MỚI] Biểu tượng Chat/Tin nhắn */}
+            <Link to="/messages" style={{ textDecoration: 'none', fontSize: '22px', position: 'relative' }}>
+                💬
+                {/* Bạn có thể thêm một chấm đỏ nhỏ ở đây nếu có tin nhắn mới */}
+                <span style={{ position: 'absolute', top: '-5px', right: '-5px', background: 'red', borderRadius: '50%', width: '10px', height: '10px', border: '2px solid white' }}></span>
+            </Link>
+
             {user ? (
               <div style={{ position: 'relative' }}>
                 {/* User Toggle */}
@@ -100,6 +117,10 @@ const Header = () => {
                     <Link to="/profile" onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #f0f0f0', transition: 'background 0.2s' }} onMouseEnter={(e) => e.target.style.background = '#f9f9f9'} onMouseLeave={(e) => e.target.style.background = 'white'}>
                       📂 Hồ sơ của tôi
                     </Link>
+
+                    <Link to="/my-orders" style={{ display: 'block', padding: '10px 15px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #eee' }} onClick={() => setShowDropdown(false)}>
+                      📦 Đơn hàng của tôi
+                    </Link>
                     
                     <Link to="/manage-categories" onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #f0f0f0', transition: 'background 0.2s' }} onMouseEnter={(e) => e.target.style.background = '#f9f9f9'} onMouseLeave={(e) => e.target.style.background = 'white'}>
                       🏷️ Quản lý danh mục
@@ -108,6 +129,7 @@ const Header = () => {
                     <Link to="/manage-recipes" onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #f0f0f0', transition: 'background 0.2s' }} onMouseEnter={(e) => e.target.style.background = '#f9f9f9'} onMouseLeave={(e) => e.target.style.background = 'white'}>
                       🍳 Quản lý công thức
                     </Link>
+
 
                     {/* CÁC CHỨC NĂNG DÀNH RIÊNG CHO ADMIN */}
                     {user?.role === 'admin' && (
