@@ -4,16 +4,17 @@ const router = express.Router();
 const Message = require('../models/Message');
 const auth = require('../middleware/auth');
 
-// Lấy lịch sử chat giữa 2 người
+// 1. Retrieve list of conversations (Displayed in the left column)
+// NOTE: Fixed route (/conversations) must be placed BEFORE dynamic parameter routes
 router.get('/conversations', auth, async (req, res) => {
     try {
         const userId = req.user.id;
-        // Tìm tất cả tin nhắn liên quan đến User này, sau đó nhóm theo người gửi/nhận
+        // Find all messages related to this User
         const messages = await Message.find({
             $or: [{ sender: userId }, { receiver: userId }]
-        }).sort({ createdAt: -1 }).populate('sender receiver', 'username');
+       }).sort({ createdAt: -1 }).populate('sender receiver', 'username avatar');
 
-        // Logic để lọc ra danh sách Unique Users (những người đã chat cùng)
+        // Filter out duplicate chat partners
         const chatPartners = [];
         const seenIds = new Set();
 
@@ -30,7 +31,26 @@ router.get('/conversations', auth, async (req, res) => {
 
         res.json(chatPartners);
     } catch (err) {
-        res.status(500).json({ message: 'Lỗi server' });
+        res.status(500).json({ message: 'Error occurred while fetching conversation list' });
+    }
+});
+
+// 2. Retrieve detailed chat history between 2 users (Displayed in the right chat panel)
+router.get('/:user1Id/:user2Id', auth, async (req, res) => {
+    try {
+        const { user1Id, user2Id } = req.params;
+        
+        // Find all messages sent between these two IDs
+        const messages = await Message.find({
+            $or: [
+                { sender: user1Id, receiver: user2Id },
+                { sender: user2Id, receiver: user1Id }
+            ]
+        }).sort({ createdAt: 1 }); // Sort by creation time ascending (oldest at the top)
+        
+        res.json(messages);
+    } catch (error) {
+        res.status(500).json({ message: 'Error occurred while fetching detailed chat history' });
     }
 });
 

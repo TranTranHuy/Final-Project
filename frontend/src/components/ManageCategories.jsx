@@ -7,10 +7,10 @@ import { AuthContext } from '../context/AuthContext'; // Import Context
 const ManageCategories = () => {
   const [categories, setCategories] = useState([]);
   const [name, setName] = useState('');
-  const [editingId, setEditingId] = useState(null); // ID danh mục đang sửa
-  const { user } = useContext(AuthContext); // Lấy thông tin user
+  const [editingId, setEditingId] = useState(null); // ID of the category being edited
+  const { user } = useContext(AuthContext); // Get user info
 
-  // Tải danh mục
+  // Load categories
   useEffect(() => {
     fetchCategories();
   }, []);
@@ -24,7 +24,7 @@ const ManageCategories = () => {
     }
   };
 
-  // Thêm hoặc Cập nhật
+  // Create or update
   const handleSubmit = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem('token');
@@ -35,20 +35,20 @@ const ManageCategories = () => {
         await axios.put(`http://localhost:5000/api/categories/${editingId}`, { name }, {
             headers: { 'x-auth-token': token }
         });
-        Swal.fire('Thành công', 'Đã cập nhật danh mục', 'success');
+        Swal.fire('Success', 'Category updated', 'success');
       } else {
         // Create
         await axios.post('http://localhost:5000/api/categories', { name }, {
             headers: { 'x-auth-token': token }
         });
-        Swal.fire('Thành công', 'Đã thêm danh mục mới', 'success');
+        Swal.fire('Success', 'New category added', 'success');
       }
       
       setName('');
       setEditingId(null);
       fetchCategories();
     } catch (error) {
-      Swal.fire('Lỗi', error.response?.data?.message || 'Không có quyền thực hiện', 'error');
+      Swal.fire('Error', error.response?.data?.message || 'No permission to perform this action', 'error');
     }
   };
 
@@ -56,8 +56,8 @@ const ManageCategories = () => {
   const handleDelete = async (id) => {
     const token = localStorage.getItem('token');
     Swal.fire({
-        title: 'Bạn chắc chứ?',
-        text: "Không thể hoàn tác!",
+        title: 'Are you sure?',
+        text: "This cannot be undone!",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33'
@@ -67,16 +67,16 @@ const ManageCategories = () => {
                 await axios.delete(`http://localhost:5000/api/categories/${id}`, {
                     headers: { 'x-auth-token': token }
                 });
-                Swal.fire('Đã xóa!', 'Danh mục đã bị xóa.', 'success');
+                Swal.fire('Deleted!', 'The category has been deleted.', 'success');
                 fetchCategories();
             } catch (error) {
-                Swal.fire('Lỗi', 'Bạn không có quyền xóa danh mục này', 'error');
+                Swal.fire('Error', 'You do not have permission to delete this category', 'error');
             }
         }
     });
   };
 
-  // Hàm chọn sửa
+  // Edit select function
   const handleEdit = (cat) => {
     setName(cat.name);
     setEditingId(cat._id);
@@ -84,30 +84,30 @@ const ManageCategories = () => {
 
   return (
     <div style={{ maxWidth: '800px', margin: '40px auto', padding: '20px' }}>
-      <h2 style={{ textAlign: 'center', color: '#ff6b00' }}>Quản lý Danh mục</h2>
+      <h2 style={{ textAlign: 'center', color: '#ff6b00' }}>Category Management</h2>
       
-      {/* Form nhập liệu */}
+      {/* Input form */}
       <form onSubmit={handleSubmit} style={{ display: 'flex', gap: '10px', marginBottom: '30px' }}>
         <input 
           type="text" 
-          placeholder="Tên danh mục (VD: Món chay)" 
+          placeholder="Category name (E.g: Vegetarian dishes)" 
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
           style={{ flex: 1, padding: '10px', borderRadius: '5px', border: '1px solid #ccc' }}
         />
         <button type="submit" style={{ padding: '10px 20px', background: editingId ? '#ffc107' : '#ff6b00', color: '#fff', border: 'none', borderRadius: '5px', cursor: 'pointer', fontWeight: 'bold' }}>
-          {editingId ? 'Cập nhật' : 'Thêm mới'}
+          {editingId ? 'Update' : 'Add new'}
         </button>
         {editingId && (
-            <button type="button" onClick={() => { setName(''); setEditingId(null); }} style={{ padding: '10px', background: '#ccc', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Hủy</button>
+            <button type="button" onClick={() => { setName(''); setEditingId(null); }} style={{ padding: '10px', background: '#ccc', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Cancel</button>
         )}
       </form>
 
-      {/* Danh sách */}
+      {/* List */}
       <ul style={{ listStyle: 'none', padding: 0 }}>
         {categories.map((cat) => {
-            // LOGIC HIỂN THỊ NÚT
+            // DISPLAY BUTTON LOGIC
             const currentUserId = user?.id || user?._id;
             const isOwner = cat.user === currentUserId;
             const isAdmin = user?.role === 'admin';
@@ -117,11 +117,11 @@ const ManageCategories = () => {
                 <li key={cat._id} style={{ display: 'flex', justifyContent: 'space-between', padding: '15px', borderBottom: '1px solid #eee', alignItems: 'center' }}>
                     <span style={{ fontWeight: '500' }}>{cat.name}</span>
                     
-                    {/* Chỉ hiện nút nếu có quyền */}
+                    {/* Only show buttons if authorized */}
                     {canEdit && (
                         <div>
-                            <button onClick={() => handleEdit(cat)} style={{ marginRight: '10px', background: 'transparent', border: '1px solid #ffc107', color: '#ffc107', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Sửa</button>
-                            <button onClick={() => handleDelete(cat._id)} style={{ background: '#dc3545', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Xóa</button>
+                            <button onClick={() => handleEdit(cat)} style={{ marginRight: '10px', background: 'transparent', border: '1px solid #ffc107', color: '#ffc107', padding: '5px 10px', borderRadius: '4px', cursor: 'pointer' }}>Edit</button>
+                            <button onClick={() => handleDelete(cat._id)} style={{ background: '#dc3545', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '4px', cursor: 'pointer' }}>Delete</button>
                         </div>
                     )}
                 </li>

@@ -23,7 +23,7 @@ const EditRecipe = () => {
   const [ingImageFile, setIngImageFile] = useState(null);
   const [addedIngredients, setAddedIngredients] = useState([]);
 
-  // State Gợi ý
+  // Suggestion state
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -57,7 +57,7 @@ const EditRecipe = () => {
             setAddedIngredients(formattedIngs);
         }
       } catch (error) {
-        Swal.fire('Lỗi', 'Không tìm thấy công thức.', 'error');
+        Swal.fire('Error', 'Recipe not found.', 'error');
         navigate('/manage-recipes');
       } finally {
         setLoading(false);
@@ -74,7 +74,7 @@ const EditRecipe = () => {
     }
   };
 
-  // Hàm Gợi ý tên
+  // Name suggestion function
   const handleNameChange = async (e) => {
     const value = e.target.value;
     setIngName(value);
@@ -98,7 +98,7 @@ const EditRecipe = () => {
 
   const handleAddIngredient = () => {
     if (!ingName || !ingPrice) {
-      Swal.fire('Thiếu thông tin', 'Vui lòng nhập tên và giá', 'warning'); return;
+      Swal.fire('Missing information', 'Please enter name and price', 'warning'); return;
     }
     const newIng = {
       id: Date.now(),
@@ -149,69 +149,69 @@ const EditRecipe = () => {
       });
 
       Swal.fire({
-        title: 'Cập nhật thành công!', icon: 'success', confirmButtonColor: '#ff6b00', timer: 1500, showConfirmButton: false
+        title: 'Updated successfully!', icon: 'success', confirmButtonColor: '#ff6b00', timer: 1500, showConfirmButton: false
       }).then(() => navigate('/manage-recipes'));
 
     } catch (error) {
-      console.error('Lỗi cập nhật:', error);
-      // [ĐÃ SỬA] Bắt lỗi thật sự từ Backend
-      const errorMsg = error.response?.data?.message || 'Có lỗi xảy ra khi cập nhật.';
-      Swal.fire('Thất bại', errorMsg, 'error');
+      console.error('Update error:', error);
+      // [FIXED] Catch actual error from Backend
+      const errorMsg = error.response?.data?.message || 'An error occurred while updating.';
+      Swal.fire('Failed', errorMsg, 'error');
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <p style={{ textAlign: 'center', marginTop: '50px' }}>Đang tải...</p>;
+  if (loading) return <p style={{ textAlign: 'center', marginTop: '50px' }}>Loading...</p>;
 
   return (
     <div style={{ maxWidth: '1400px', margin: '40px auto', padding: '0 20px' }}>
-      <h1 style={{ textAlign: 'center', color: '#ff6b00', marginBottom: '30px' }}>Sửa công thức</h1>
+      <h1 style={{ textAlign: 'center', color: '#ff6b00', marginBottom: '30px' }}>Edit Recipe</h1>
 
       <div style={{ display: 'flex', gap: '40px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
         
-        {/* CỘT TRÁI */}
+        {/* LEFT COLUMN */}
         <div style={{ flex: 2, minWidth: '400px', background: '#fff', padding: '30px', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
           <form onSubmit={handleSubmit}>
             <div style={{ marginBottom: '20px' }}>
-              <label>Tiêu đề món ăn *</label>
+              <label>Recipe Title *</label>
               <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} required style={{ width: '100%', padding: '10px' }} />
             </div>
             <div style={{ marginBottom: '20px' }}>
-              <label>Nguyên liệu (Text) *</label>
+              <label>Ingredients (Text) *</label>
               <textarea value={ingredients} onChange={(e) => setIngredients(e.target.value)} required rows={3} style={{ width: '100%', padding: '10px' }} />
             </div>
             <div style={{ marginBottom: '20px' }}>
-              <label>Hướng dẫn nấu *</label>
+              <label>Cooking Instructions *</label>
               <textarea value={instructions} onChange={(e) => setInstructions(e.target.value)} required rows={6} style={{ width: '100%', padding: '10px' }} />
             </div>
             <div style={{ display: 'flex', gap: '20px', marginBottom: '20px' }}>
                 <div style={{ flex: 1 }}>
-                    <label>Danh mục</label>
+                    <label>Category</label>
                     <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} style={{ width: '100%', padding: '10px' }}>
-                        <option value="">-- Chọn --</option>
+                        <option value="">-- Select --</option>
                         {categories.map((cat) => <option key={cat._id} value={cat.name}>{cat.name}</option>)}
                     </select>
                 </div>
             </div>
             <div style={{ marginBottom: '30px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Ảnh minh họa hiện tại / Chọn ảnh mới</label>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Current image / Choose new image</label>
                 {previewImage && <img src={previewImage} alt="Preview" style={{ width: '150px', height: '100px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px' }} />}
                 <input type="file" accept="image/*" onChange={handleMainImageChange} style={{ display: 'block' }}/>
             </div>
             <button type="submit" disabled={loading} style={{ width: '100%', padding: '14px', backgroundColor: '#ff6b00', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer' }}>
-              {loading ? 'Đang lưu...' : 'Cập nhật Công thức'}
+              {loading ? 'Saving...' : 'Update Recipe'}
             </button>
           </form>
         </div>
 
-        {/* CỘT PHẢI */}
+        {/* RIGHT COLUMN */}
         <div style={{ flex: 1.2, minWidth: '350px', background: '#fff9f5', padding: '25px', borderRadius: '16px', border: '1px solid #ffdec2' }}>
-          <h3 style={{ color: '#ff6b00', borderBottom: '2px solid #ffdec2', paddingBottom: '10px', marginBottom: '20px' }}>🛒 Sửa/Thêm nguyên liệu</h3>
+          <h3 style={{ color: '#ff6b00', borderBottom: '2px solid #ffdec2', paddingBottom: '10px', marginBottom: '20px' }}>🛒 Edit/Add Ingredients</h3>
 
           <div style={{ background: '#fff', padding: '15px', borderRadius: '12px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
             <div style={{ position: 'relative', marginBottom: '10px' }}>
-                <input type="text" placeholder="Tên nguyên liệu" value={ingName} onChange={handleNameChange} onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} onFocus={() => ingName && setShowSuggestions(true)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />
+                <input type="text" placeholder="Ingredient name" value={ingName} onChange={handleNameChange} onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} onFocus={() => ingName && setShowSuggestions(true)} style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} />
                 {showSuggestions && suggestions.length > 0 && (
                     <ul style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'white', listStyle: 'none', padding: 0, margin: 0, border: '1px solid #ddd', borderRadius: '0 0 6px 6px', zIndex: 100, boxShadow: '0 4px 10px rgba(0,0,0,0.1)', maxHeight: '200px', overflowY: 'auto' }}>
                         {suggestions.map((item) => (
@@ -221,13 +221,13 @@ const EditRecipe = () => {
                 )}
             </div>
             <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                <input type="number" placeholder="Giá" value={ingPrice} onChange={(e) => setIngPrice(e.target.value)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }} />
+                <input type="number" placeholder="Price" value={ingPrice} onChange={(e) => setIngPrice(e.target.value)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }} />
             </div>
             <div style={{ marginBottom: '10px' }}>
                 <input type="file" accept="image/*" onChange={(e) => setIngImageFile(e.target.files[0])} style={{ fontSize: '12px' }} />
                 {ingImageFile && <div style={{marginTop: '5px'}}><img src={URL.createObjectURL(ingImageFile)} alt="preview" style={{width:'60px', height:'60px', objectFit:'cover', borderRadius:'4px'}}/></div>}
             </div>
-            <button type="button" onClick={handleAddIngredient} style={{ width: '100%', padding: '8px', background: '#333', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>+ Thêm</button>
+            <button type="button" onClick={handleAddIngredient} style={{ width: '100%', padding: '8px', background: '#333', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>+ Add</button>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '15px' }}>

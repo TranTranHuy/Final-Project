@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
 
 const CreateRecipe = () => {
-  // State cho món ăn chính
+  // State for the main recipe
   const [title, setTitle] = useState('');
   const [ingredients, setIngredients] = useState(''); 
   const [instructions, setInstructions] = useState('');
@@ -14,13 +14,13 @@ const CreateRecipe = () => {
   const [imageFile, setImageFile] = useState(null);
   const [loading, setLoading] = useState(false);
   
-  // State cho phần thêm nguyên liệu chi tiết (Cột phải)
+  // State for adding detailed ingredients (right column)
   const [ingName, setIngName] = useState('');
   const [ingPrice, setIngPrice] = useState('');
   const [ingImageFile, setIngImageFile] = useState(null);
   const [addedIngredients, setAddedIngredients] = useState([]); 
 
-  // State cho Gợi ý (Suggestions)
+  // State for suggestion list
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -32,13 +32,13 @@ const CreateRecipe = () => {
         const response = await axios.get('http://localhost:5000/api/categories');
         setCategories(response.data);
       } catch (error) {
-        console.error('Lỗi tải danh mục:', error);
+        console.error('Category load error:', error);
       }
     };
     fetchCategories();
   }, []);
 
-  // Hàm xử lý khi nhập tên nguyên liệu -> Gọi API tìm kiếm
+  // Handle ingredient name input -> call search API
   const handleNameChange = async (e) => {
     const value = e.target.value;
     setIngName(value);
@@ -57,17 +57,17 @@ const CreateRecipe = () => {
     }
   };
 
-  // Khi chọn 1 gợi ý
+  // When selecting a suggestion
   const selectSuggestion = (name) => {
       setIngName(name);
       setSuggestions([]);
       setShowSuggestions(false);
   };
 
-  // Hàm thêm nguyên liệu vào danh sách tạm
+  // Add ingredient to temporary list
   const handleAddIngredient = () => {
     if (!ingName || !ingPrice) {
-      Swal.fire('Thiếu thông tin', 'Vui lòng nhập tên và giá nguyên liệu', 'warning');
+      Swal.fire('Missing information', 'Please enter both ingredient name and price', 'warning');
       return;
     }
 
@@ -82,11 +82,11 @@ const CreateRecipe = () => {
 
     setAddedIngredients([...addedIngredients, newIng]);
     
-    // Tự động thêm tên vào textarea bên trái để đồng bộ
+    // Automatically append name to the left textarea for sync
     const newText = ingredients ? `${ingredients}, ${ingName}` : ingName;
     setIngredients(newText);
 
-    // Reset form nhỏ
+    // Reset the small form
     setIngName('');
     setIngPrice('');
     setIngImageFile(null);
@@ -108,7 +108,7 @@ const CreateRecipe = () => {
     formData.append('category', selectedCategory);
     if (imageFile) formData.append('image', imageFile);
 
-    // Gửi danh sách nguyên liệu chi tiết
+    // Send detailed ingredient list
     const ingredientsData = addedIngredients.map(ing => ({
         name: ing.name,
         price: ing.price,
@@ -116,7 +116,7 @@ const CreateRecipe = () => {
     }));
     formData.append('extendedIngredients', JSON.stringify(ingredientsData));
 
-    // Gửi file ảnh nguyên liệu
+    // Send ingredient image files
     addedIngredients.forEach(ing => {
         if (ing.file) {
             formData.append('ingredientImages', ing.file);
@@ -132,21 +132,21 @@ const CreateRecipe = () => {
         },
       });
 
-      // Thành công
+      // Success
       Swal.fire({
-        title: 'Đã gửi bài!',
-        text: 'Bài viết đang chờ Admin phê duyệt. Cảm ơn bạn!',
+        title: 'Recipe submitted!',
+        text: 'Your post is waiting for admin approval. Thank you!',
         icon: 'info',
         confirmButtonColor: '#ff6b00'
       }).then(() => navigate('/'));
 
     } catch (error) {
-      console.error('Lỗi chi tiết:', error);
-      const errorMsg = error.response?.data?.message || 'Có lỗi xảy ra không xác định!';
+      console.error('Submission error:', error);
+      const errorMsg = error.response?.data?.message || 'An unknown error occurred!';
       
       Swal.fire({ 
         icon: 'error', 
-        title: 'Thất bại', 
+        title: 'Failed', 
         text: errorMsg 
       });
     } finally {
@@ -156,38 +156,38 @@ const CreateRecipe = () => {
 
   return (
     <div style={{ maxWidth: '1400px', margin: '40px auto', padding: '0 20px' }}>
-      <h1 style={{ textAlign: 'center', color: '#ff6b00', marginBottom: '40px' }}>Tạo công thức mới</h1>
+      <h1 style={{ textAlign: 'center', color: '#ff6b00', marginBottom: '40px' }}>Create New Recipe</h1>
       <div style={{ display: 'flex', gap: '40px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
         
-        {/* CỘT TRÁI */}
+        {/* LEFT COLUMN */}
         <div style={{ flex: 2, minWidth: '400px', background: '#fff', padding: '30px', borderRadius: '16px', boxShadow: '0 4px 10px rgba(0,0,0,0.1)' }}>
              <form onSubmit={handleSubmit}>
                 <div style={{ marginBottom: '20px' }}>
-                  <label>Tiêu đề *</label>
+                  <label>Title *</label>
                   <input type="text" value={title} onChange={e=>setTitle(e.target.value)} required style={{width:'100%', padding:'10px'}}/>
                 </div>
                 <div style={{ marginBottom: '20px' }}>
-                  <label>Nguyên liệu (Text) *</label>
+                  <label>Ingredients (Text) *</label>
                   <textarea value={ingredients} onChange={e=>setIngredients(e.target.value)} required rows={3} style={{width:'100%', padding:'10px'}}/>
                 </div>
                 <div style={{ marginBottom: '20px' }}>
-                  <label>Hướng dẫn *</label>
+                  <label>Instructions *</label>
                   <textarea value={instructions} onChange={e=>setInstructions(e.target.value)} required rows={6} style={{width:'100%', padding:'10px'}}/>
                 </div>
                 
                 <div style={{ display:'flex', gap:'20px', marginBottom:'20px' }}>
                     <div style={{flex:1}}>
-                      <label>Danh mục</label>
+                      <label>Category</label>
                       <select value={selectedCategory} onChange={e=>setSelectedCategory(e.target.value)} style={{width:'100%', padding:'10px'}}>
-                        <option value="">Chọn</option>
+                        <option value="">Select</option>
                         {categories.map(c=><option key={c._id} value={c.name}>{c.name}</option>)}
                       </select>
                     </div>
 
                     <div style={{flex:1}}>
-                      <label style={{ display: 'block', marginBottom: '5px' }}>Ảnh chính</label>
+                      <label style={{ display: 'block', marginBottom: '5px' }}>Main Image</label>
                       <input type="file" accept="image/*" onChange={e=>setImageFile(e.target.files[0])}/>
-                      {/* [ĐÃ THÊM] Preview ảnh chính */}
+                      {/* [ADDED] Main image preview */}
                       {imageFile && (
                         <div style={{ marginTop: '10px' }}>
                             <img 
@@ -201,22 +201,22 @@ const CreateRecipe = () => {
                 </div>
 
                 <button type="submit" disabled={loading} style={{width:'100%', padding:'15px', background:'#ff6b00', color:'white', border:'none', fontWeight:'bold', cursor:'pointer', borderRadius: '8px'}}>
-                  {loading ? 'Đang gửi...' : 'Đăng bài'}
+                  {loading ? 'Sending...' : 'Post'}
                 </button>
             </form>
         </div>
 
-        {/* CỘT PHẢI */}
+        {/* RIGHT COLUMN */}
         <div style={{ flex: 1.2, minWidth: '350px', background: '#fff9f5', padding: '25px', borderRadius: '16px', border: '1px solid #ffdec2' }}>
-          <h3 style={{ color: '#ff6b00', borderBottom: '2px solid #ffdec2', paddingBottom: '10px' }}>🛒 Thêm nguyên liệu</h3>
+          <h3 style={{ color: '#ff6b00', borderBottom: '2px solid #ffdec2', paddingBottom: '10px' }}>🛒 Add Ingredients</h3>
 
           <div style={{ background: '#fff', padding: '15px', borderRadius: '12px', marginBottom: '20px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
             
-            {/* INPUT TÊN VỚI GỢI Ý */}
+            {/* NAME INPUT WITH SUGGESTIONS */}
             <div style={{ position: 'relative', marginBottom: '10px' }}>
                 <input 
                     type="text" 
-                    placeholder="Nhập tên (VD: Chữ C...)" 
+                    placeholder="Enter name (e.g., Lettuce...)" 
                     value={ingName} 
                     onChange={handleNameChange}
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)} 
@@ -224,7 +224,7 @@ const CreateRecipe = () => {
                     style={{ width: '100%', padding: '10px', borderRadius: '6px', border: '1px solid #ddd' }} 
                 />
                 
-                {/* DANH SÁCH GỢI Ý */}
+                {/* SUGGESTION LIST */}
                 {showSuggestions && suggestions.length > 0 && (
                     <ul style={{ 
                         position: 'absolute', top: '100%', left: 0, right: 0, 
@@ -248,12 +248,12 @@ const CreateRecipe = () => {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginBottom: '10px' }}>
-                <input type="number" placeholder="Giá (VNĐ)" value={ingPrice} onChange={(e) => setIngPrice(e.target.value)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }} />
+                <input type="number" placeholder="Price (VNĐ)" value={ingPrice} onChange={(e) => setIngPrice(e.target.value)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: '1px solid #ddd' }} />
             </div>
 
             <div style={{ marginBottom: '15px' }}>
                 <input type="file" accept="image/*" onChange={(e) => setIngImageFile(e.target.files[0])} style={{ fontSize: '12px' }} />
-                {/* [ĐÃ THÊM] Preview ảnh nguyên liệu */}
+                {/* [ADDED] Ingredient image preview */}
                 {ingImageFile && (
                     <div style={{ marginTop: '8px' }}>
                         <img 
@@ -265,10 +265,10 @@ const CreateRecipe = () => {
                 )}
             </div>
 
-            <button type="button" onClick={handleAddIngredient} style={{ width: '100%', padding: '8px', background: '#333', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>+ Thêm vào danh sách</button>
+            <button type="button" onClick={handleAddIngredient} style={{ width: '100%', padding: '8px', background: '#333', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>+ Add to list</button>
           </div>
 
-          {/* LIST NGUYÊN LIỆU ĐÃ THÊM */}
+          {/* LIST OF ADDED INGREDIENTS */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: '15px' }}>
             {addedIngredients.map((item) => (
                 <div key={item.id} style={{ background: '#fff', borderRadius: '10px', overflow: 'hidden', boxShadow: '0 2px 5px rgba(0,0,0,0.1)', position: 'relative' }}>

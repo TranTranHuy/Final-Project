@@ -5,11 +5,11 @@ const IngredientSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    unique: true, // Không trùng tên
+    unique: true, // Does not allow duplicate names
     trim: true
   },
   image: {
-    type: String, // [MỚI] Thêm trường lưu đường dẫn ảnh
+    type: String, // [NEW] Add field to store image path
     default: ''
   },
   createdAt: {

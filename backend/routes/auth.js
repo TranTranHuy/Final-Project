@@ -4,28 +4,34 @@ const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const auth = require('../middleware/auth'); // Middleware xác thực
+const auth = require('../middleware/auth'); // Authentication Middleware
 
-// 1. Đăng ký (Register)
+// 1. Register
 router.post('/register', async (req, res) => {
   const { username, email, password } = req.body;
   try {
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/;
+        if (!passwordRegex.test(password)) {
+            return res.status(400).json({ 
+                message: 'Password must be at least 6 characters long and include uppercase, lowercase, number, and special character.' 
+            });
+        }
     let user = await User.findOne({ email });
-    if (user) return res.status(400).json({ message: 'Email đã tồn tại' });
+    if (user) return res.status(400).json({ message: 'Email already exists' });
 
     user = new User({ username, email, password });
     
-    // Mã hóa mật khẩu
+    // Password encryption
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(password, salt);
 
     await user.save();
 
-    // Tạo Token
+    // Create Token
     const payload = {
       user: {
         id: user.id,
-        role: user.role // [QUAN TRỌNG] Nạp role vào token
+        role: user.role //Add role to token
       }
     };
 
@@ -35,56 +41,59 @@ router.post('/register', async (req, res) => {
     });
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Lỗi Server');
+    res.status(500).send('Server Error');
   }
 });
 
-// 2. Đăng nhập (Login)
+// 2. Login
 router.post('/login', async (req, res) => {
   const { email, password } = req.body;
   try {
     let user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ message: 'Thông tin đăng nhập không đúng' });
+    if (!user) return res.status(400).json({ message: 'Email or password is incorrect' });
 
     const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ message: 'Thông tin đăng nhập không đúng' });
+    if (!isMatch) return res.status(400).json({ message: 'Email or password is incorrect' });
 
-    // Tạo Token
+    // create Token
     const payload = {
       user: {
         id: user.id,
-        role: user.role // [QUAN TRỌNG] Nạp role vào token
+        role: user.role,
+        avatar: user.avatar //Add role to token
       }
     };
 
     jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '5d' }, (err, token) => {
       if (err) throw err;
-      // [QUAN TRỌNG] Trả về thông tin user để Frontend dùng
+      // Returns user information for the frontend to use
       res.json({ 
         token, 
         user: { 
-          id: user.id,   // Frontend cần cái này để so sánh owner
+          id: user.id,   // Frontend needs this to compare owners.
           username: user.username, 
           email: user.email,
-          role: user.role 
+          role: user.role, 
+          avatar: user.avatar
         } 
       });
     });
   } catch (err) {
     console.error(err.message);
-    res.status(500).send('Lỗi Server');
+    res.status(500).send('Server Error');
   }
 });
 
-// 3. Lấy thông tin User hiện tại (Me)
+// 3. Get current user information.
 router.get('/', auth, async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select('-password');
-    res.json(user);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Lỗi Server');
-  }
+    try {
+        // Find user by ID from the token and return all information (except password)
+        const user = await User.findById(req.user.id).select('-password');
+        res.json(user); 
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
 });
 
 module.exports = router;

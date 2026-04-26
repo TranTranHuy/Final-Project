@@ -3,10 +3,10 @@ const express = require('express');
 const router = express.Router();
 const Recipe = require('../models/Recipe');
 
-// Lấy tất cả nguyên liệu đang bán trên hệ thống (Hỗ trợ tìm kiếm)
+// Retrieve all ingredients currently for sale on the system (Search support)
 router.get('/', async (req, res) => {
     try {
-        const { search } = req.query; // Nhận từ khóa tìm kiếm từ Frontend
+        const { search } = req.query; // Receive search keyword from Frontend
         const recipes = await Recipe.find({ status: 'approved' }).populate('user', 'username');
         
         let marketItems = [];
@@ -15,9 +15,9 @@ router.get('/', async (req, res) => {
             if (recipe.extendedIngredients && recipe.extendedIngredients.length > 0) {
                 recipe.extendedIngredients.forEach(ing => {
                     if (ing.price && ing.price > 0) {
-                        // NẾU có từ khóa tìm kiếm, kiểm tra xem tên nguyên liệu có chứa từ khóa không
+                        // IF there is a search keyword, check if the ingredient name contains the keyword
                         if (search && !ing.name.toLowerCase().includes(search.toLowerCase())) {
-                            return; // Nếu không chứa thì bỏ qua, không push vào mảng
+                            return; // If it doesn't contain the keyword, skip it
                         }
 
                         marketItems.push({
@@ -26,7 +26,7 @@ router.get('/', async (req, res) => {
                             price: ing.price,
                             image: ing.image,
                             sellerId: recipe.user ? recipe.user._id : null,
-                            sellerName: recipe.user ? recipe.user.username : 'Ẩn danh',
+                            sellerName: recipe.user ? recipe.user.username : 'Anonymous',
                             recipeId: recipe._id,
                             recipeTitle: recipe.title
                         });
@@ -37,7 +37,7 @@ router.get('/', async (req, res) => {
 
         res.json(marketItems);
     } catch (error) {
-        res.status(500).json({ message: 'Lỗi server' });
+        res.status(500).json({ message: 'Server error' });
     }
 });
 

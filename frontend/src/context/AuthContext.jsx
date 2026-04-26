@@ -1,52 +1,47 @@
 // src/context/AuthContext.jsx
+
 import React, { createContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null); // user sẽ chứa object { id, username, email, role... }
-  const navigate = useNavigate();
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-  // Kiểm tra đăng nhập khi vừa vào trang (F5 không bị mất login)
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
+    useEffect(() => {
+        const loadUser = async () => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                try {
+                    // Call API at Step 1 to get information
+                    const res = await axios.get('http://localhost:5000/api/auth', {
+                        headers: { 'x-auth-token': token }
+                    });
+                    setUser(res.data); // Update all information (with avatar)
+                } catch (err) {
+                    localStorage.removeItem('token');
+                    setUser(null);
+                }
+            }
+            setLoading(false);
+        };
+        loadUser();
+    }, []);
 
-    if (token && storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
-  }, []);
-
-  // Hàm đăng nhập (Lưu thông tin và cập nhật State)
-  const login = (userData, token) => {
-    localStorage.setItem('token', token);
-
-    // [QUAN TRỌNG] Chuẩn hóa ID người dùng
-    // Backend MongoDB trả về '_id', nhưng đôi khi frontend dùng 'id'
-    // Ta tạo một object mới đảm bảo luôn có trường 'id' để dễ so sánh
-    const userToSave = {
-      ...userData, 
-      id: userData.id || userData._id // Ưu tiên lấy id, nếu không có thì lấy _id
+    const login = (userData, token) => {
+        localStorage.setItem('token', token);
+        setUser(userData);
     };
 
-    localStorage.setItem('user', JSON.stringify(userToSave));
-    setUser(userToSave);
-    
-    navigate('/'); // Chuyển về trang chủ
-  };
+    const logout = () => {
+        localStorage.removeItem('token');
+        setUser(null);
+    };
 
-  // Hàm đăng xuất
-  const logout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    setUser(null);
-    navigate('/login');
-  };
-
-  return (
-    <AuthContext.Provider value={{ user, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
+    return (
+        <AuthContext.Provider value={{ user, setUser, login, logout, loading }}>
+            {children}
+        </AuthContext.Provider>
+    );
 };

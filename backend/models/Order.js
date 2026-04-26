@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const OrderSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   
-  // Lưu lại danh sách món hàng lúc đặt (để đề phòng sau này người bán đổi giá)
+  // Save the list of items when placing the order (in case the seller changes the price later)
   items: [{
     name: { type: String, required: true },
     price: { type: Number, required: true },
@@ -14,7 +14,7 @@ const OrderSchema = new mongoose.Schema({
     quantity: { type: Number, required: true }
   }],
   
-  // Thông tin giao hàng
+  // Delivery Information
   shippingInfo: {
       fullName: { type: String, required: true },
       phone: { type: String, required: true },
@@ -22,11 +22,11 @@ const OrderSchema = new mongoose.Schema({
   },
   
   totalPrice: { type: Number, required: true },
-  // [MỚI THÊM] Thông tin thanh toán
+  //Payment Information
   paymentMethod: { type: String, required: true, default: 'COD' },
-  paymentStatus: { type: String, default: 'Chưa thanh toán' },
+  paymentStatus: { type: String, default: 'Not Paid' },
   
-  // Trạng thái đơn: pending (chờ xác nhận), shipping (đang giao), completed (hoàn thành)
+  // Order Status: pending (waiting for confirmation), shipping (in transit), completed (completed)
   status: { type: String, default: 'pending' },
   
   createdAt: { type: Date, default: Date.now }

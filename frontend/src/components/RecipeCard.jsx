@@ -33,7 +33,7 @@ const RecipeCard = ({ recipe }) => {
         e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
       }}
     >
-      {/* Ảnh */}
+      {/* Image */}
       <div style={{ position: 'relative', overflow: 'hidden', height: '180px' }}>
         <img
           src={recipe.image ? `http://localhost:5000${recipe.image}` : 'https://via.placeholder.com/300x180?text=No+Image'}
@@ -47,7 +47,7 @@ const RecipeCard = ({ recipe }) => {
         />
       </div>
 
-      {/* Nội dung */}
+      {/* Content */}
       <div style={{ padding: '16px', flex: 1 }}>
         <h3 style={{
           fontSize: '18px',
@@ -64,7 +64,7 @@ const RecipeCard = ({ recipe }) => {
         </h3>
 
         <p style={{ fontSize: '14px', color: '#666', margin: 0 }}>
-          {recipe.category || 'Món ăn'}
+          {recipe.category || 'Dish'}
         </p>
       </div>
     </div>

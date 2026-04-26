@@ -14,17 +14,31 @@ const RecipeSchema = new mongoose.Schema({
     category: { type: String },
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     
-    // [MỚI] Trạng thái bài viết: 'pending' (chờ duyệt), 'approved' (đã duyệt), 'rejected' (từ chối)
+    // Post status: 'pending', 'approved', 'rejected'
     status: { 
         type: String, 
         enum: ['pending', 'approved', 'rejected'], 
         default: 'pending' 
     },
     
-    // [MỚI] Lưu tên các nguyên liệu mà user nhập nhưng chưa có trong kho Admin
+    //Save the names of ingredients that the user enters but are not in the Admin inventory
     unknownIngredients: [{ type: String }],
 
-    createdAt: { type: Date, default: Date.now }
+    createdAt: { type: Date, default: Date.now },
+
+    //List of users who liked the post (save user IDs)
+  likes: [{ 
+      type: mongoose.Schema.Types.ObjectId, 
+      ref: 'User' 
+  }],
+
+  // List of comments
+  comments: [{
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      username: { type: String, required: true },
+      text: { type: String, required: true },
+      createdAt: { type: Date, default: Date.now }
+  }],
 });
 
 module.exports = mongoose.model('Recipe', RecipeSchema);

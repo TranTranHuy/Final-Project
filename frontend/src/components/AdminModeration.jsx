@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Swal from 'sweetalert2';
-import { useNavigate } from 'react-router-dom'; // [MỚI] Import để chuyển trang
+import { useNavigate } from 'react-router-dom'; // [NEW] Import to navigate
 
 const AdminModeration = () => {
   const [pendingRecipes, setPendingRecipes] = useState([]);
@@ -22,24 +22,24 @@ const AdminModeration = () => {
 
   useEffect(() => { fetchPending(); }, []);
 
-  // [MỚI] Hàm Duyệt (Accept) nguyên liệu mới
+  // [NEW] Approve new ingredient function
   const handleAcceptIngredient = async (recipeId, ingredientName) => {
     try {
         const token = localStorage.getItem('token');
         
-        // 1. Thêm nguyên liệu vào Kho Database chung
+        // 1. Add ingredient to the shared database store
         await axios.post('http://localhost:5000/api/ingredients', 
             { name: ingredientName }, 
             { headers: { 'x-auth-token': token } }
         );
 
-        // 2. Xóa nguyên liệu này khỏi danh sách cảnh báo của bài viết hiện tại
+        // 2. Remove this ingredient from the recipe's alert list
         await axios.put(`http://localhost:5000/api/recipes/${recipeId}/remove-unknown-ingredient`, 
             { ingredientName }, 
             { headers: { 'x-auth-token': token } }
         );
 
-        // 3. Cập nhật lại UI ngay lập tức (không cần load lại trang)
+        // 3. Update the UI immediately (no page reload required)
         setPendingRecipes(prevRecipes => 
             prevRecipes.map(recipe => {
                 if (recipe._id === recipeId) {
@@ -53,66 +53,66 @@ const AdminModeration = () => {
         );
 
         const Toast = Swal.mixin({ toast: true, position: 'top-end', showConfirmButton: false, timer: 2000 });
-        Toast.fire({ icon: 'success', title: `Đã duyệt & Thêm "${ingredientName}" vào Kho!` });
+        Toast.fire({ icon: 'success', title: `Approved & added "${ingredientName}" to Store!` });
 
     } catch (error) {
-        // Nếu nguyên liệu đã có sẵn trong kho do ai đó vừa thêm, backend sẽ báo lỗi 400
-        const errMsg = error.response?.data?.message || 'Không thể thêm';
-        Swal.fire('Chú ý', errMsg, 'warning');
+        // If the ingredient already exists in the store because someone else added it, the backend returns 400
+        const errMsg = error.response?.data?.message || 'Cannot add';
+        Swal.fire('Notice', errMsg, 'warning');
     }
   };
 
-  // Hàm duyệt bài đăng
+  // Approve recipe
   const approveRecipe = async (id) => {
     try {
         const token = localStorage.getItem('token');
         await axios.put(`http://localhost:5000/api/recipes/${id}/approve`, {}, {
             headers: { 'x-auth-token': token }
         });
-        Swal.fire('Đã duyệt!', 'Bài viết đã được hiển thị công khai.', 'success');
+        Swal.fire('Approved!', 'The recipe is now public.', 'success');
         setPendingRecipes(pendingRecipes.filter(r => r._id !== id));
     } catch (error) {
-        console.error('Chi tiết lỗi duyệt bài:', error);
+        console.error('Recipe approval error details:', error);
         
-        // [ĐÃ SỬA] Bắt chính xác lỗi từ Backend trả về
-        const errorMsg = error.response?.data?.message || 'Có lỗi xảy ra khi duyệt bài!';
-        Swal.fire('Lỗi', errorMsg, 'error');
+        // [FIXED] Capture the exact error returned from the backend
+        const errorMsg = error.response?.data?.message || 'An error occurred while approving the recipe!';
+        Swal.fire('Error', errorMsg, 'error');
     }
   };
 
-  // Hàm Từ chối / Xóa bài đăng
+  // Reject / delete recipe
   const rejectRecipe = (id) => {
       Swal.fire({
-          title: 'Từ chối bài đăng này?',
-          text: 'Bài viết sẽ bị xóa khỏi hệ thống.',
+          title: 'Reject this recipe?',
+          text: 'The post will be deleted from the system.',
           icon: 'warning',
           showCancelButton: true,
           confirmButtonColor: '#d33',
-          confirmButtonText: 'Xóa ngay'
+          confirmButtonText: 'Delete now'
       }).then(async (result) => {
           if (result.isConfirmed) {
               try {
                   const token = localStorage.getItem('token');
                   await axios.delete(`http://localhost:5000/api/recipes/${id}`, { headers: { 'x-auth-token': token } });
                   setPendingRecipes(pendingRecipes.filter(r => r._id !== id));
-                  Swal.fire('Đã xóa', 'Bài đăng đã bị từ chối.', 'success');
+                  Swal.fire('Deleted', 'The recipe has been rejected.', 'success');
               } catch (err) {
-                  Swal.fire('Lỗi', 'Không thể xóa', 'error');
+                  Swal.fire('Error', 'Cannot delete', 'error');
               }
           }
       });
   };
 
-  if (loading) return <p style={{textAlign:'center', marginTop:'50px'}}>Đang tải bài viết chờ duyệt...</p>;
+  if (loading) return <p style={{textAlign:'center', marginTop:'50px'}}>Loading pending recipes...</p>;
 
   return (
     <div style={{ maxWidth: '1200px', margin: '40px auto', padding: '20px' }}>
       <h2 style={{ textAlign: 'center', color: '#dc3545', marginBottom: '30px' }}>
-          🛡️ Quản lý phê duyệt bài viết ({pendingRecipes.length})
+          🛡️ Admin approves the post ({pendingRecipes.length})
       </h2>
       
       {pendingRecipes.length === 0 ? (
-          <p style={{ textAlign: 'center', color: '#666', fontSize: '18px' }}>🎉 Không có bài viết nào cần duyệt!</p>
+          <p style={{ textAlign: 'center', color: '#666', fontSize: '18px' }}>🎉 No articles need to be reviewed!</p>
       ) : (
           <div style={{ display: 'grid', gap: '30px' }}>
               {pendingRecipes.map(recipe => (
@@ -121,12 +121,12 @@ const AdminModeration = () => {
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                           <div>
                             <h3 style={{ margin: '0 0 10px 0', color: '#333', fontSize: '22px' }}>{recipe.title}</h3>
-                            {/* [MỚI] Hiển thị tên người đăng thay vì ID */}
+                            {/* [NEW] Show publisher name instead of ID */}
                             <p style={{ margin: '0 0 5px 0', color: '#555', fontSize: '15px' }}>
-                                👤 Người đăng: <strong style={{ color: '#007bff' }}>{recipe.user?.username || 'Unknown'}</strong>
+                                👤 Posted by: <strong style={{ color: '#007bff' }}>{recipe.user?.username || 'Unknown'}</strong>
                             </p>
                             <p style={{ margin: 0, fontStyle: 'italic', fontSize: '14px', color: '#888' }}>
-                                📂 Danh mục: {recipe.category || 'Không có'}
+                                📂 Category: {recipe.category || 'No category'}
                             </p>
                           </div>
                           {recipe.image && (
@@ -136,17 +136,17 @@ const AdminModeration = () => {
 
                       <hr style={{ margin: '20px 0', border: 'none', borderTop: '1px solid #eee' }} />
 
-                      {/* KHU VỰC CẢNH BÁO NGUYÊN LIỆU LẠ */}
+                      {/* UNKNOWN INGREDIENT ALERT AREA */}
                       {recipe.unknownIngredients && recipe.unknownIngredients.length > 0 ? (
                           <div style={{ background: '#fff3cd', padding: '15px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #ffeeba' }}>
                               <h4 style={{ margin: '0 0 10px 0', color: '#856404', display:'flex', alignItems:'center', gap:'8px' }}>
-                                  ⚠️ Có nguyên liệu mới cần duyệt
+                                  ⚠️ There are new ingredients that need review
                               </h4>
                               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                                   {recipe.unknownIngredients.map((name, idx) => (
                                       <li key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid #ffdf7e' }}>
                                           <span style={{ fontWeight: 'bold', color: '#333' }}>{name}</span>
-                                          {/* [MỚI] Nút Accept nguyên liệu */}
+                                          {/* Accept ingredient button */}
                                           <button 
                                             onClick={() => handleAcceptIngredient(recipe._id, name)}
                                             style={{ background: '#28a745', color: 'white', border: 'none', padding: '6px 15px', borderRadius: '6px', cursor: 'pointer', fontSize: '13px', fontWeight: 'bold', boxShadow: '0 2px 4px rgba(40,167,69,0.3)' }}
@@ -159,31 +159,31 @@ const AdminModeration = () => {
                           </div>
                       ) : (
                           <div style={{ background: '#d4edda', padding: '12px', borderRadius: '8px', marginBottom: '20px', border: '1px solid #c3e6cb' }}>
-                              <p style={{ color: '#155724', margin: 0, fontSize: '14px', fontWeight: 'bold' }}>✅ Tất cả nguyên liệu đều nằm trong kho dữ liệu chuẩn.</p>
+                              <p style={{ color: '#155724', margin: 0, fontSize: '14px', fontWeight: 'bold' }}>✅ All ingredients are in the standard database.</p>
                           </div>
                       )}
 
-                      {/* KHU VỰC NÚT ĐIỀU KHIỂN */}
+                      {/* CONTROL AREA */}
                       <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '15px' }}>
-                          {/* [MỚI] Nút Xem chi tiết */}
+                          {/* View Details button */}
                           <button 
                             onClick={() => navigate(`/recipe/${recipe._id}`)}
                             style={{ padding: '10px 20px', background: 'transparent', color: '#666', border: '1px solid #ccc', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}
                           >
-                            👁️ Xem chi tiết
+                            👁️ View details
                           </button>
                           
                           <button 
                             onClick={() => rejectRecipe(recipe._id)}
                             style={{ padding: '10px 20px', background: '#dc3545', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold' }}>
-                            Từ chối
+                            Decline
                           </button>
                           
                           <button 
                             onClick={() => approveRecipe(recipe._id)}
                             style={{ padding: '10px 25px', background: '#007bff', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 'bold', fontSize: '15px' }}
                           >
-                            Duyệt bài đăng
+                            Approve Post
                           </button>
                       </div>
                   </div>

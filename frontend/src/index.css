@@ -1,6 +1,5 @@
 /* src/index.css */
 
-/* Reset cơ bản */
 * {
   margin: 0;
   padding: 0;
@@ -15,25 +14,25 @@ html, body {
   line-height: 1.6;
 }
 
-/* Đảm bảo root chiếm toàn màn hình */
+/* Make sure root access takes up the entire screen.*/
 #root {
   min-height: 100vh;
   background-color: #ffffff;
 }
 
-/* Header (đã có inline style, nhưng thêm fallback nếu cần) */
+/* Header */
 header {
   background-color: #ffffff !important;
 }
 
-/* Phần nội dung chính (Featured Recipes) */
+/* Featured Recipes */
 main {
   max-width: 1400px;
   margin: 0 auto;
   padding: 20px 40px;
 }
 
-/* Tiêu đề Featured Recipes */
+/* Title Featured Recipes */
 h2 {
   font-size: 24px;
   font-weight: 700;
@@ -42,7 +41,7 @@ h2 {
   text-align: center;
 }
 
-/* Grid cho các recipe cards - responsive */
+/* Grid for recipe cards - responsive */
 .recipe-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -50,7 +49,6 @@ h2 {
   padding: 0 20px;
 }
 
-/* Style cho RecipeCard (bạn có thể copy style này vào component hoặc dùng class) */
 .recipe-card {
   background-color: #ffffff;
   border: 1px solid #e0e0e0;
@@ -84,12 +82,12 @@ h2 {
   color: #222;
   line-height: 1.3;
 
-  /* Multi-line clamp - phiên bản tương thích đầy đủ */
+
   overflow: hidden;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;         /* Vendor prefix cho Chrome/Safari/Edge cũ */
-  line-clamp: 2;                  /* Thuộc tính chuẩn CSS hiện đại */
+  -webkit-line-clamp: 2;         
+  line-clamp: 2;                 
 }
 
 .recipe-card .category {

@@ -2,51 +2,51 @@
 const express = require('express');
 const router = express.Router();
 const Category = require('../models/Category');
-const auth = require('../middleware/auth'); // Middleware xác thực
+const auth = require('../middleware/auth'); // Authentication Middleware
 
-// 1. Lấy tất cả danh mục (Ai cũng xem được)
+// 1. Get all categories (Anyone can see them)
 router.get('/', async (req, res) => {
   try {
     const categories = await Category.find().sort({ createdAt: -1 });
     res.json(categories);
   } catch (err) {
-    res.status(500).json({ message: 'Lỗi server' });
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
-// 2. Thêm danh mục mới (Cần đăng nhập)
+// 2. Add new category (Need to be logged in)
 router.post('/', auth, async (req, res) => {
   const { name, image } = req.body;
   try {
     let category = await Category.findOne({ name });
-    if (category) return res.status(400).json({ message: 'Danh mục đã tồn tại' });
+    if (category) return res.status(400).json({ message: 'Category already exists' });
 
     category = new Category({
       name,
       image,
-      user: req.user.id // [QUAN TRỌNG] Lưu ID người tạo
+      user: req.user.id // Save creator ID
     });
 
     await category.save();
     res.json(category);
   } catch (err) {
-    res.status(500).send('Lỗi Server');
+    res.status(500).send('Server error');
   }
 });
 
-// 3. Sửa danh mục (Phân quyền)
+// 3. Update category (Permission required)
 router.put('/:id', auth, async (req, res) => {
   try {
     const category = await Category.findById(req.params.id);
-    if (!category) return res.status(404).json({ message: 'Không tìm thấy' });
+    if (!category) return res.status(404).json({ message: 'Category not found' });
 
-    // --- KIỂM TRA QUYỀN ---
+    // --- CHECK PERMISSION ---
     const isOwner = category.user && category.user.toString() === req.user.id;
     const isAdmin = req.user.role === 'admin';
 
-    // Nếu không phải chủ sở hữu VÀ không phải Admin -> Chặn
+    // If not the owner AND not an admin -> Block
     if (!isOwner && !isAdmin) {
-      return res.status(403).json({ message: 'Bạn không có quyền sửa danh mục này' });
+      return res.status(403).json({ message: 'You do not have permission to edit this category' });
     }
     // ---------------------
 
@@ -56,29 +56,29 @@ router.put('/:id', auth, async (req, res) => {
     await category.save();
     res.json(category);
   } catch (err) {
-    res.status(500).send('Lỗi Server');
+    res.status(500).send('Server error');
   }
 });
 
-// 4. Xóa danh mục (Phân quyền)
+// 4. Remove category (Permission required)
 router.delete('/:id', auth, async (req, res) => {
   try {
     const category = await Category.findById(req.params.id);
-    if (!category) return res.status(404).json({ message: 'Không tìm thấy' });
+    if (!category) return res.status(404).json({ message: 'Category not found' });
 
-    // --- KIỂM TRA QUYỀN ---
+    // --- CHECK PERMISSION ---
     const isOwner = category.user && category.user.toString() === req.user.id;
     const isAdmin = req.user.role === 'admin';
 
     if (!isOwner && !isAdmin) {
-      return res.status(403).json({ message: 'Bạn không có quyền xóa danh mục này' });
+      return res.status(403).json({ message: 'You do not have permission to delete this category' });
     }
     // ---------------------
 
     await category.deleteOne();
-    res.json({ message: 'Đã xóa danh mục' });
+    res.json({ message: 'Category deleted' });
   } catch (err) {
-    res.status(500).send('Lỗi Server');
+    res.status(500).send('Server error');
   }
 });
 

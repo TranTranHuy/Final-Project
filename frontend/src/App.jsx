@@ -1,4 +1,4 @@
-// src/App.jsx - Phiên bản đầy đủ với quản lý công thức (edit/delete) + TÌM KIẾM & LỌC
+// src/App.jsx - Full version with recipe management + SEARCH, FILTER & BANNER
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Routes, Route, useLocation } from 'react-router-dom';
@@ -18,37 +18,41 @@ import Cart from './components/Cart';
 import Checkout from './components/Checkout';
 import MyOrders from './components/MyOrders';
 import Inbox from './components/Inbox';
+import UserProfile from './components/UserProfile';
+import Favorites from './components/Favorites';
+
+//Import TopBanner you just created
+import TopBanner from './components/TopBanner'; 
 
 const App = () => {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // [MỚI] State cho Tìm kiếm và Lọc
+  // State for Search and Filter
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [categories, setCategories] = useState([]);
 
   const location = useLocation();
 
-  // [MỚI] Lấy danh sách danh mục (để đưa vào ô Select)
+  // Get list of categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const res = await axios.get('http://localhost:5000/api/categories');
         setCategories(res.data);
       } catch (err) {
-        console.error('Lỗi tải danh mục:', err);
+        console.error('Error fetching categories:', err);
       }
     };
     fetchCategories();
   }, []);
 
-  // Lấy danh sách công thức (Có áp dụng tìm kiếm và lọc)
+  // Get the list of recipes
   useEffect(() => {
     const fetchRecipes = async () => {
       setLoading(true);
       try {
-        // [ĐÃ SỬA] Gắn thêm searchTerm và selectedCategory vào URL
         const response = await axios.get(`http://localhost:5000/api/recipes?search=${searchTerm}&category=${selectedCategory}`);
         setRecipes(response.data);
       } catch (error) {
@@ -58,7 +62,6 @@ const App = () => {
       }
     };
 
-    // Dùng setTimeout để đợi người dùng gõ xong mới gọi API (chống lag)
     const delayDebounceFn = setTimeout(() => {
         fetchRecipes();
     }, 500);
@@ -68,35 +71,38 @@ const App = () => {
 
   return (
     <>
-      <Header />
+      <Header searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
 
+      {/* Add Routes to the Main Container */}
       <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px' }}>
         <Routes>
-          {/* Trang chủ - hiển thị danh sách recipes */}
+          {/* THome page */}
           <Route
             path="/"
             element={
               <>
-                <h2 style={{ textAlign: 'center', margin: '40px 0 30px', color: '#333' }}>🍳 Khám phá Công thức</h2>
+                {/* [IMPORTANT] PUT BANNER HERE! It will display beautifully at the top of the homepage */}
+                {/* Hide Banner if user is searching to focus on results */}
+                {!searchTerm && !selectedCategory && <TopBanner />}
 
-                {/* [MỚI] THANH TÌM KIẾM VÀ LỌC DANH MỤC */}
+                <h2 style={{ textAlign: 'center', margin: '40px 0 30px', color: '#333' }}>🍳 Discover Recipes</h2>
+
+                {/* SEARCH BAR AND CATEGORY FILTER */}
                 <div style={{ display: 'flex', gap: '15px', marginBottom: '40px', justifyContent: 'center', flexWrap: 'wrap' }}>
-                    {/* Ô tìm kiếm */}
                     <input 
                         type="text" 
-                        placeholder="🔍 Tìm công thức nấu ăn (VD: Gà rán, Bò né...)" 
+                        placeholder="🔍 Search recipes (e.g.: Fried chicken, Beef steak...)" 
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
                         style={{ padding: '12px 20px', borderRadius: '30px', border: '1px solid #ccc', minWidth: '350px', outline: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}
                     />
                     
-                    {/* Bộ lọc danh mục */}
                     <select 
                         value={selectedCategory} 
                         onChange={(e) => setSelectedCategory(e.target.value)}
                         style={{ padding: '12px 20px', borderRadius: '30px', border: '1px solid #ccc', cursor: 'pointer', outline: 'none', backgroundColor: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.05)', minWidth: '200px' }}
                     >
-                        <option value="">📁 Tất cả danh mục</option>
+                        <option value="">📁 All categories</option>
                         {categories.map(cat => (
                             <option key={cat._id} value={cat.name}>{cat.name}</option>
                         ))}
@@ -104,10 +110,10 @@ const App = () => {
                 </div>
 
                 {loading ? (
-                  <p style={{ textAlign: 'center', fontSize: '18px', color: '#888' }}>Đang tải công thức...</p>
+                  <p style={{ textAlign: 'center', fontSize: '18px', color: '#888' }}>Loading recipes...</p>
                 ) : recipes.length === 0 ? (
                   <p style={{ textAlign: 'center', color: '#666', fontSize: '18px', padding: '40px', background: '#f9f9f9', borderRadius: '12px' }}>
-                    Không tìm thấy công thức nào phù hợp. 🍳
+                    No recipes match your search. 🍳
                   </p>
                 ) : (
                   <div
@@ -140,6 +146,8 @@ const App = () => {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/my-orders" element={<MyOrders />} />
           <Route path="/messages" element={<Inbox />} />
+          <Route path="/user/:id" element={<UserProfile />} />
+          <Route path="/favorites" element={<Favorites />} />
         </Routes>
       </div>
     </>

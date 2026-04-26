@@ -6,7 +6,7 @@ const path = require('path');
 const Ingredient = require('../models/Ingredient');
 const auth = require('../middleware/auth');
 
-// Cấu hình Multer cho nguyên liệu
+// Multer configuration for materials
 const storage = multer.diskStorage({
   destination: (req, file, cb) => { cb(null, 'uploads/'); },
   filename: (req, file, cb) => {
@@ -16,14 +16,14 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ 
     storage, 
-    limits: { fileSize: 2 * 1024 * 1024 }, // Max 2MB cho ảnh nguyên liệu
+    limits: { fileSize: 2 * 1024 * 1024 }, // Maximum 2MB for raw image files.
     fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/')) cb(null, true);
-        else cb(new Error('Chỉ chấp nhận file ảnh!'), false);
+        else cb(new Error('Only image files are allowed!'), false);
     }
 });
 
-// 1. Lấy danh sách nguyên liệu
+// 1. Get the list of ingredients
 router.get('/', async (req, res) => {
     try {
         const { query } = req.query;
@@ -34,20 +34,20 @@ router.get('/', async (req, res) => {
         const allIngredients = await Ingredient.find().sort({ createdAt: -1 }); 
         res.json(allIngredients);
     } catch (err) {
-        res.status(500).json({ message: 'Lỗi server' });
+        res.status(500).json({ message: 'Server error' });
     }
 });
 
-// 2. Thêm nguyên liệu mới (Có upload ảnh)
+// 2. Add new ingredient (With image upload)
 router.post('/', auth, upload.single('image'), async (req, res) => {
     try {
-        if (req.user.role !== 'admin') return res.status(403).json({ message: 'Chỉ Admin mới được thêm' });
+        if (req.user.role !== 'admin') return res.status(403).json({ message: 'Only Admin can add ingredients' });
 
         const { name } = req.body;
-        if (!name || name.trim() === '') return res.status(400).json({ message: 'Tên không được để trống' });
+        if (!name || name.trim() === '') return res.status(400).json({ message: 'Name cannot be empty' });
 
         let ingredient = await Ingredient.findOne({ name: { $regex: new RegExp(`^${name.trim()}$`, 'i') } });
-        if (ingredient) return res.status(400).json({ message: 'Nguyên liệu này đã tồn tại' });
+        if (ingredient) return res.status(400).json({ message: 'Ingredient already exists' });
 
         ingredient = new Ingredient({ 
             name: name.trim(),
@@ -61,13 +61,13 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
     }
 });
 
-// 3. Sửa nguyên liệu (Đổi tên, đổi ảnh)
+// 3. Update ingredient (Change name, change image)
 router.put('/:id', auth, upload.single('image'), async (req, res) => {
     try {
-        if (req.user.role !== 'admin') return res.status(403).json({ message: 'Chỉ Admin mới được sửa' });
+        if (req.user.role !== 'admin') return res.status(403).json({ message: 'Only Admin can update ingredients' });
 
         const ingredient = await Ingredient.findById(req.params.id);
-        if (!ingredient) return res.status(404).json({ message: 'Không tìm thấy' });
+        if (!ingredient) return res.status(404).json({ message: 'Ingredient not found' });
 
         if (req.body.name) ingredient.name = req.body.name.trim();
         if (req.file) ingredient.image = `/uploads/${req.file.filename}`;
@@ -79,12 +79,12 @@ router.put('/:id', auth, upload.single('image'), async (req, res) => {
     }
 });
 
-// 4. Xóa nguyên liệu
+// 4. Delete ingredient
 router.delete('/:id', auth, async (req, res) => {
     try {
-        if (req.user.role !== 'admin') return res.status(403).json({ message: 'Chỉ Admin mới được xóa' });
+        if (req.user.role !== 'admin') return res.status(403).json({ message: 'Only Admin can delete ingredients' });
         await Ingredient.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Đã xóa nguyên liệu' });
+        res.json({ message: 'Ingredient deleted' });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

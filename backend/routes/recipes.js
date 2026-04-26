@@ -7,6 +7,9 @@ const path = require('path');
 const Recipe = require('../models/Recipe');
 const Ingredient = require('../models/Ingredient');
 const auth = require('../middleware/auth');
+const User = require('../models/User');
+
+
 
 // Config Multer
 const storage = multer.diskStorage({
@@ -22,7 +25,7 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/')) { cb(null, true); } 
-    else { cb(new Error('Chỉ chấp nhận file ảnh!'), false); }
+    else { cb(new Error('Only image files are accepted!'), false); }
   }
 });
 
@@ -31,20 +34,53 @@ const cpUpload = upload.fields([
     { name: 'ingredientImages', maxCount: 20 }
 ]);
 
-// 1. GET ALL: Lấy danh sách bài viết (Có hỗ trợ Tìm kiếm & Lọc)
+// ==========================================
+// 1. API: Get the Top 4 Most Liked Banner Formulas
+// ==========================================
+router.get('/top', async (req, res) => {
+    try {
+        // Use MongoDB's Aggregation to count the length of the 'likes' array and sort it in descending order.
+        const topRecipes = await Recipe.aggregate([
+            { $match: { status: 'approved' } }, // Only fetch approved recipes
+            { $addFields: { likesCount: { $size: { $ifNull: ["$likes", []] } } } }, // Create a virtual field to count likes
+            { $sort: { likesCount: -1, createdAt: -1 } }, // Sort by like count and creation date
+            { $limit: 4 } // Only fetch the top 4 recipes
+        ]);
+        res.json(topRecipes);
+    } catch (err) {
+        console.error("Error fetching Top Recipes:", err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// ==========================================
+// [NEW] 2. API: Get the list of favorite recipes for the current user
+// ==========================================
+router.get('/favorites', auth, async (req, res) => {
+    try {
+        // Find all recipes that are liked by the current user and are approved
+        const favorites = await Recipe.find({ likes: req.user.id, status: 'approved' }).sort({ createdAt: -1 });
+        res.json(favorites);
+    } catch (err) {
+        console.error("Error fetching Favorites:", err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// 1. GET ALL: Get the list of all recipes (with search and filter support)
 router.get('/', async (req, res) => {
   try {
       const { status, search, category } = req.query;
       
-      // Mặc định chỉ lấy bài đã duyệt
+      // Default to fetching only approved recipes
       let query = { status: status || 'approved' }; 
 
-      // Nếu có từ khóa tìm kiếm (Lọc theo tiêu đề, không phân biệt hoa thường)
+      // If there is a search keyword (Filter by title, case-insensitive)
       if (search) {
           query.title = { $regex: search, $options: 'i' };
       }
 
-      // Nếu có chọn danh mục
+      // If a category is selected
       if (category) {
           query.category = category;
       }
@@ -55,14 +91,14 @@ router.get('/', async (req, res) => {
           
       res.json(recipes);
   } catch (err) {
-      res.status(500).json({ message: 'Lỗi server' });
+      res.status(500).json({ message: 'Server error' });
   }
 });
 
-// 2. POST: Đăng bài
+// 2. POST: Post an article
 router.post('/', auth, cpUpload, async (req, res) => {
   try {
-      if (!req.body.title || !req.body.instructions) return res.status(400).json({ message: 'Thiếu thông tin' });
+      if (!req.body.title || !req.body.instructions) return res.status(400).json({ message: 'Missing information' });
 
       let extendedIngredients = [];
       if (req.body.extendedIngredients) {
@@ -118,17 +154,13 @@ router.post('/', auth, cpUpload, async (req, res) => {
 });
 
 
-// =========================================================================
-// CÁC ĐƯỜNG DẪN CỤ THỂ (PHẢI ĐẶT TRƯỚC CÁC ĐƯỜNG DẪN CHUNG CÓ /:id)
-// =========================================================================
-
-// 3. DUYỆT BÀI ĐĂNG (Chỉ Admin) -> Đã khôi phục lại code bị mất!
+// 3. APPROVE POSTS (Admin Only)
 router.put('/:id/approve', auth, async (req, res) => {
     try {
-        if (req.user.role !== 'admin') return res.status(403).json({ message: 'Không có quyền' });
+        if (req.user.role !== 'admin') return res.status(403).json({ message: 'You do not have permission to approve recipes' });
         
         const recipe = await Recipe.findById(req.params.id);
-        if (!recipe) return res.status(404).json({ message: 'Không tìm thấy bài viết' });
+        if (!recipe) return res.status(404).json({ message: 'Recipe not found' });
   
         recipe.status = 'approved';
         recipe.unknownIngredients = []; 
@@ -140,14 +172,14 @@ router.put('/:id/approve', auth, async (req, res) => {
     }
 });
 
-// 4. XÓA CẢNH BÁO 1 NGUYÊN LIỆU (Khi Admin duyệt nguyên liệu)
+// 4. REMOVE UNKNOWN INGREDIENT (When Admin approves ingredients)
 router.put('/:id/remove-unknown-ingredient', auth, async (req, res) => {
     try {
-        if (req.user.role !== 'admin') return res.status(403).json({ message: 'Không có quyền' });
+        if (req.user.role !== 'admin') return res.status(403).json({ message: 'You do not have permission to remove unknown ingredients' });
         const { ingredientName } = req.body;
         
         const recipe = await Recipe.findById(req.params.id);
-        if (!recipe) return res.status(404).json({ message: 'Không tìm thấy' });
+        if (!recipe) return res.status(404).json({ message: 'Recipe not found' });
 
         recipe.unknownIngredients = recipe.unknownIngredients.filter(name => name !== ingredientName);
         await recipe.save();
@@ -158,31 +190,28 @@ router.put('/:id/remove-unknown-ingredient', auth, async (req, res) => {
 });
 
 
-// =========================================================================
-// CÁC ĐƯỜNG DẪN CHUNG CHỨA PARAMETER /:id (PHẢI ĐẶT Ở DƯỚI CÙNG)
-// =========================================================================
 
 // 5. GET SINGLE
 router.get('/:id', async (req, res) => {
   try {
       const recipe = await Recipe.findById(req.params.id).populate('user', 'username');
-      if (!recipe) return res.status(404).json({ message: 'Không tìm thấy' });
+      if (!recipe) return res.status(404).json({ message: 'Not found' });
       res.json(recipe);
   } catch (err) {
-      res.status(500).json({ message: 'Lỗi server' });
+      res.status(500).json({ message: 'Server error' });
   }
 });
 
-// 6. PUT: Cập nhật bài viết
+// 6. PUT: Update an article
 router.put('/:id', auth, cpUpload, async (req, res) => {
   try {
     const recipe = await Recipe.findById(req.params.id);
-    if (!recipe) return res.status(404).json({ message: 'Không tìm thấy công thức' });
+    if (!recipe) return res.status(404).json({ message: 'Recipe not found' });
 
     const isOwner = recipe.user && recipe.user.toString() === req.user.id;
     const isAdmin = req.user.role === 'admin';
     if (!isOwner && !isAdmin) {
-      return res.status(403).json({ message: 'Bạn không có quyền sửa bài viết này!' });
+      return res.status(403).json({ message: 'You do not have permission to update this recipe' });
     }
 
     recipe.title = req.body.title || recipe.title;
@@ -233,7 +262,7 @@ router.put('/:id', auth, cpUpload, async (req, res) => {
             }
 
         } catch (e) {
-            console.error("Lỗi parse JSON nguyên liệu:", e);
+            console.error("Error parsing raw JSON:", e);
         }
     }
 
@@ -241,24 +270,24 @@ router.put('/:id', auth, cpUpload, async (req, res) => {
     res.json(updatedRecipe);
 
   } catch (err) {
-    console.error('Lỗi chi tiết từ Server khi SỬA:', err);
-    res.status(400).json({ message: err.message || 'Lỗi khi cập nhật công thức' });
+    console.error('Detailed error from Server when updating:', err);
+    res.status(400).json({ message: err.message || 'Error when updating recipe' });
   }
 });
 
-// 7. DELETE: XÓA BÀI ĐĂNG
+// 7. DELETE: Delete a recipe
 router.delete('/:id', auth, async (req, res) => {
     try {
         const recipe = await Recipe.findById(req.params.id);
         if (!recipe) {
-            return res.status(404).json({ message: 'Không tìm thấy công thức' });
+            return res.status(404).json({ message: 'Recipe not found' });
         }
 
         const isAdmin = req.user.role === 'admin';
         const isOwner = recipe.user && recipe.user.toString() === req.user.id;
 
         if (!isAdmin && !isOwner) {
-            return res.status(403).json({ message: 'Bạn không có quyền xóa bài viết này!' });
+            return res.status(403).json({ message: 'You do not have permission to delete this recipe' });
         }
 
         if (recipe.image) {
@@ -280,10 +309,64 @@ router.delete('/:id', auth, async (req, res) => {
         }
 
         await Recipe.findByIdAndDelete(req.params.id);
-        res.json({ message: 'Đã xóa công thức và thu dọn ảnh thành công!' });
+        res.json({ message: 'Recipe deleted and images cleaned up successfully!' });
     } catch (err) {
-        console.error('Lỗi khi xóa bài:', err);
-        res.status(500).json({ message: 'Lỗi server khi xóa bài. Vui lòng xem Terminal.' });
+        console.error('Error when deleting recipe:', err);
+        res.status(500).json({ message: 'Server error when deleting recipe. Please check the terminal.' });
+    }
+});
+
+// API: Like/Unlike posts
+router.post('/:id/like', auth, async (req, res) => {
+    try {
+        const recipe = await Recipe.findById(req.params.id);
+        if (!recipe) return res.status(404).json({ message: 'Recipe not found' });
+
+        //Check if the user has liked this post.
+        const isLiked = recipe.likes.includes(req.user.id);
+
+        if (isLiked) {
+            // If already liked -> Remove like (remove ID from array)
+            recipe.likes = recipe.likes.filter(id => id.toString() !== req.user.id);
+        } else {
+            // If not liked -> Add like (push ID to array)
+            recipe.likes.push(req.user.id);
+        }
+
+        await recipe.save();
+        res.json(recipe.likes);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+// API: Add Comment
+router.post('/:id/comment', auth, async (req, res) => {
+    try {
+        const recipe = await Recipe.findById(req.params.id);
+        if (!recipe) return res.status(404).json({ message: 'Recipe not found' });
+
+        const currentUser = await User.findById(req.user.id);
+        if (!currentUser) return res.status(404).json({ message: 'User not found' });
+
+        const newComment = {
+            user: currentUser._id,
+            username: currentUser.username,
+            text: req.body.text
+        };
+
+        if (!recipe.comments) {
+            recipe.comments = [];
+        }
+
+        // Push comment to the beginning
+        recipe.comments.unshift(newComment);
+        await recipe.save();
+
+        res.json(recipe.comments);
+    } catch (error) {
+        console.error('Error when adding comment:', error);
+        res.status(500).json({ message: 'Server error' });
     }
 });
 

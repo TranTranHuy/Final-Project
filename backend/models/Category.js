@@ -10,7 +10,7 @@ const CategorySchema = new mongoose.Schema({
   image: {
     type: String
   },
-  // [MỚI] Thêm người tạo danh mục
+  // Added category creators
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User'

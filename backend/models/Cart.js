@@ -2,14 +2,14 @@
 const mongoose = require('mongoose');
 
 const CartSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Người mua
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Buyer
   items: [{
     name: { type: String, required: true },
     price: { type: Number, required: true },
     image: { type: String },
-    sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // [QUAN TRỌNG] Lưu ID người bán
-    sellerName: { type: String }, // Tên người bán
-    recipeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Recipe' }, // Mua từ bài viết nào
+    sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // [IMPORTANT] Save the seller ID
+    sellerName: { type: String }, // Seller's name
+    recipeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Recipe' }, // Purchase from which recipe
     quantity: { type: Number, default: 1 }
   }],
   updatedAt: { type: Date, default: Date.now }

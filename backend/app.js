@@ -4,7 +4,7 @@ const connectDB = require('./config/db');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 
-// Import http và socket.io
+// Import http and socket.io
 const http = require('http'); 
 const { Server } = require('socket.io'); 
 const Message = require('./models/Message');
@@ -18,11 +18,11 @@ connectDB();
 app.use(cors());
 app.use(bodyParser.json()); 
 
-// Phục vụ ảnh tĩnh
+// Serve static uploads
 app.use('/uploads', express.static('uploads'));
 
 // ==========================================
-// ĐĂNG KÝ TẤT CẢ CÁC ROUTES TẠI ĐÂY
+// REGISTER ALL ROUTES HERE
 // ==========================================
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/categories', require('./routes/categories'));
@@ -35,38 +35,38 @@ app.use('/api/messages', require('./routes/messages'));
 app.use('/api/users', require('./routes/users'));
 
 // ==========================================
-// CẤU HÌNH SERVER HTTP & SOCKET.IO
+// HTTP & SOCKET.IO SERVER CONFIGURATION
 // ==========================================
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: "http://localhost:3000",
+        origin: "*",
         methods: ["GET", "POST"]
     }
 });
 
-// XỬ LÝ SỰ KIỆN KẾT NỐI CHAT
+// HANDLE CHAT CONNECTION EVENTS
 io.on('connection', (socket) => {
-    console.log('⚡ Kết nối Socket mới:', socket.id);
+    console.log('⚡ New Socket connection:', socket.id);
 
-    // 1. Cho người dùng vào phòng cá nhân an toàn
+    // 1. Add user to a secure private room
     socket.on('setup', (userId) => {
         if (!userId) return;
         socket.join(String(userId));
-        console.log(`✅ User [${userId}] đã tham gia phòng nhận tin`);
+        console.log(`✅ User [${userId}] joined the message room`);
     });
 
-    // 2. Nhận tin và gửi đi
+    // 2. Receive message and forward it
     socket.on('sendMessage', async (data) => {
         try {
             const { senderId, receiverId, text } = data;
-            console.log(`📩 Có tin nhắn gửi từ ${senderId} tới ${receiverId}`);
+            console.log(`📩 Message from ${senderId} to ${receiverId}`);
 
-            // Lưu vào DB
+            // Save to DB
             const newMessage = new Message({ sender: senderId, receiver: receiverId, text });
             await newMessage.save();
 
-            // [QUAN TRỌNG] Ép kiểu toàn bộ về String tĩnh trước khi bắn qua Socket
+            // [IMPORTANT] Convert all values to static Strings before sending via Socket
             const plainMsg = {
                 _id: newMessage._id,
                 sender: String(newMessage.sender),
@@ -75,23 +75,23 @@ io.on('connection', (socket) => {
                 createdAt: newMessage.createdAt
             };
 
-            // Gửi trực tiếp vào phòng người nhận
+            // Emit directly to receiver room
             socket.to(String(receiverId)).emit('receiveMessage', plainMsg);
-            console.log(`📤 Đã bắn tin nhắn tới phòng [${receiverId}] thành công!`);
+            console.log(`📤 Message sent to room [${receiverId}] successfully!`);
         } catch (error) {
-            console.error("❌ Lỗi Backend khi gửi tin nhắn:", error);
+            console.error("❌ Backend error when sending message:", error);
         }
     });
 
     socket.on('disconnect', () => {
-        console.log('❌ Một người dùng đã ngắt kết nối');
+        console.log('❌ A user disconnected');
     });
 });
 
 // ==========================================
-// KHỞI ĐỘNG SERVER ĐỒNG NHẤT
+// START SYNCHRONOUS SERVER
 // ==========================================
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-    console.log(`Server & Socket.io đang chạy tại port ${PORT}`);
+    console.log(`Server & Socket.io running on port ${PORT}`);
 });
