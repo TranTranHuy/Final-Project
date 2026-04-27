@@ -63,8 +63,13 @@ const RecipeCard = ({ recipe }) => {
           {recipe.title}
         </h3>
 
-        <p style={{ fontSize: '14px', color: '#666', margin: 0 }}>
-          {recipe.category || 'Dish'}
+        <p style={{ fontSize: '14px', color: '#666', margin: '0 0 5px 0' }}>
+          📁 {recipe.category || 'Dish'}
+        </p>
+        
+        {/* [MODIFIED] Show author name */}
+        <p style={{ fontSize: '13px', color: '#888', margin: 0, fontWeight: '500' }}>
+          👤 By: {recipe.author?.username || recipe.user?.username || 'CookWeb Chef'}
         </p>
       </div>
     </div>

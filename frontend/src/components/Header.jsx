@@ -193,6 +193,10 @@ const Header = ({ searchTerm, setSearchTerm }) => {
                     <Link to="/my-orders" style={{ display: 'block', padding: '10px 15px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #eee' }} onClick={() => setShowDropdown(false)}>
                       📦 My Orders
                     </Link>
+
+                    <Link to="/manage-sales" style={{ display: 'block', padding: '10px 15px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #eee' }} onClick={() => setShowDropdown(false)}>
+                      🏪 Store Sales
+                    </Link>
                     
                     <Link to="/manage-categories" onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #f0f0f0', transition: 'background 0.2s' }} onMouseEnter={(e) => e.target.style.background = '#f9f9f9'} onMouseLeave={(e) => e.target.style.background = 'white'}>
                       🏷️ Manage Categories
@@ -204,6 +208,22 @@ const Header = ({ searchTerm, setSearchTerm }) => {
 
                     {user?.role === 'admin' && (
                     <>
+                      <Link 
+                        to="/admin/dashboard" 
+                        onClick={() => setShowDropdown(false)}
+                        style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#28a745', borderBottom: '1px solid #f0f0f0', fontWeight: 'bold' }}
+                      >
+                        📊 Admin Dashboard
+                      </Link>
+
+                      <Link 
+                        to="/admin/users" 
+                        onClick={() => setShowDropdown(false)}
+                        style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#6f42c1', borderBottom: '1px solid #f0f0f0', fontWeight: 'bold' }}
+                      >
+                        👥 Manage Users
+                      </Link>
+
                       <Link 
                         to="/admin/moderation" 
                         onClick={() => setShowDropdown(false)}
@@ -235,6 +255,16 @@ const Header = ({ searchTerm, setSearchTerm }) => {
             )}
           </div>
         </div>
+        
+        {/* Row 2: Secondary Navigation Links */}
+        {/* <nav style={{ marginTop: '16px', textAlign: 'center' }}>
+          <ul style={{ display: 'inline-flex', listStyle: 'none', margin: 0, padding: 0, gap: '40px', fontSize: '15px', color: '#555', fontWeight: '500' }}>
+            <li style={{ cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e)=>e.target.style.color='#ff6b00'} onMouseLeave={(e)=>e.target.style.color='#555'}>Premium</li>
+            <li style={{ cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e)=>e.target.style.color='#ff6b00'} onMouseLeave={(e)=>e.target.style.color='#555'}>Challenges</li>
+            <li style={{ cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e)=>e.target.style.color='#ff6b00'} onMouseLeave={(e)=>e.target.style.color='#555'}>Gifts</li>
+            <li style={{ cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e)=>e.target.style.color='#ff6b00'} onMouseLeave={(e)=>e.target.style.color='#555'}>Recipe Vault</li>
+          </ul>
+        </nav> */}
       </div>
     </header>
   );

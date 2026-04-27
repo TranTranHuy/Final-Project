@@ -33,6 +33,7 @@ app.use('/api/marketplace', require('./routes/marketplace'));
 app.use('/api/orders', require('./routes/orders'));
 app.use('/api/messages', require('./routes/messages'));
 app.use('/api/users', require('./routes/users'));
+app.use('/api/admin', require('./routes/admin'));
 
 // ==========================================
 // HTTP & SOCKET.IO SERVER CONFIGURATION

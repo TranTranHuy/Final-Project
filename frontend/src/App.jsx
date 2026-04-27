@@ -20,6 +20,10 @@ import MyOrders from './components/MyOrders';
 import Inbox from './components/Inbox';
 import UserProfile from './components/UserProfile';
 import Favorites from './components/Favorites';
+import ManageSales from './components/ManageSales';
+import Footer from './components/Footer';
+import AdminDashboard from './components/AdminDashboard';
+import ManageUsers from './components/ManageUsers';
 
 //Import TopBanner you just created
 import TopBanner from './components/TopBanner'; 
@@ -148,8 +152,13 @@ const App = () => {
           <Route path="/messages" element={<Inbox />} />
           <Route path="/user/:id" element={<UserProfile />} />
           <Route path="/favorites" element={<Favorites />} />
+          <Route path="/manage-sales" element={<ManageSales />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/users" element={<ManageUsers />} />
+          
         </Routes>
       </div>
+      <Footer />
     </>
   );
 };

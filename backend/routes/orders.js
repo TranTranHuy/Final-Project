@@ -8,8 +8,7 @@ const auth = require('../middleware/auth');
 // 1. Create a new order (Checkout)
 router.post('/', auth, async (req, res) => {
     try {
-        // Get additional payment methods from Frontend.
-        const { shippingInfo, paymentMethod } = req.body;
+        const { shippingInfo } = req.body; // [MODIFIED] Removed paymentMethod
         const cart = await Cart.findOne({ user: req.user.id });
         
         if (!cart || cart.items.length === 0) {
@@ -18,19 +17,13 @@ router.post('/', auth, async (req, res) => {
 
         const totalPrice = cart.items.reduce((total, item) => total + (item.price * item.quantity), 0);
 
-        // Assign payment status based on method
-        let paymentStatus = 'Not paid';
-        if (paymentMethod === 'CreditCard' || paymentMethod === 'MoMo') {
-            paymentStatus = 'Paid'; // If paying online, consider it as paid
-        }
-
         const order = new Order({
             user: req.user.id,
             items: cart.items,
             shippingInfo,
             totalPrice,
-            paymentMethod, // Save to DB
-            paymentStatus  // Save to DB
+            paymentMethod: 'COD', // Default to COD as requested
+            paymentStatus: 'Not paid'
         });
         await order.save();
 
@@ -56,10 +49,9 @@ router.get('/my-orders', auth, async (req, res) => {
 // 3. Retrieve list of sales (Orders placed by other users for items listed by the current user)
 router.get('/sales', auth, async (req, res) => {
     try {
-        // Find orders that contain items where the sellerId matches the current user's ID
         const orders = await Order.find({ "items.sellerId": req.user.id })
             .sort({ createdAt: -1 })
-            .populate('user', 'username'); // Get the buyer's name
+            .populate('user', 'username'); 
             
         res.json(orders);
     } catch (error) {
@@ -78,17 +70,17 @@ router.get('/all', auth, async (req, res) => {
     }
 });
 
-// 5.Update status (For Authors / Sellers)
+// 5. Update status (For Authors / Sellers ONLY)
 router.put('/:id/status', auth, async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);
         if (!order) return res.status(404).json({ message: 'Order not found' });
 
-        // CHECK PERMISSION: See if the current User is the seller of any item in this order
+        // [MODIFIED] Feedback #2: Admin cannot change all statuses. 
+        // ONLY the seller of the item can update the status.
         const isSeller = order.items.some(item => item.sellerId && item.sellerId.toString() === req.user.id);
-        const isAdmin = req.user.role === 'admin';
 
-        if (!isSeller && !isAdmin) {
+        if (!isSeller) {
             return res.status(403).json({ message: 'Only the seller of this item can update its status' });
         }
         

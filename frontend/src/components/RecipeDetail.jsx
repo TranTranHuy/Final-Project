@@ -156,6 +156,10 @@ useEffect(() => {
       <h1 style={{ textAlign: 'center', color: '#ff6b00', marginBottom: '10px', fontSize: '32px' }}>
         {recipe.title}
       </h1>
+      
+      <p style={{ textAlign: 'center', fontSize: '16px', color: '#666', marginTop: '10px', fontWeight: '500' }}>
+        👤 Posted by: <span style={{ color: '#ff6b00', fontWeight: 'bold' }}>{recipe.author?.username || recipe.user?.username || 'CookWeb Chef'}</span>
+      </p>
 
       {/* Category */}
       {recipe.category && (
