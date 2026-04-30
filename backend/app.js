@@ -21,9 +21,7 @@ app.use(bodyParser.json());
 // Serve static uploads
 app.use('/uploads', express.static('uploads'));
 
-// ==========================================
-// REGISTER ALL ROUTES HERE
-// ==========================================
+// REGISTER ALL ROUTES
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/ingredients', require('./routes/ingredients')); 
@@ -35,9 +33,7 @@ app.use('/api/messages', require('./routes/messages'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/admin', require('./routes/admin'));
 
-// ==========================================
 // HTTP & SOCKET.IO SERVER CONFIGURATION
-// ==========================================
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
@@ -67,7 +63,7 @@ io.on('connection', (socket) => {
             const newMessage = new Message({ sender: senderId, receiver: receiverId, text });
             await newMessage.save();
 
-            // [IMPORTANT] Convert all values to static Strings before sending via Socket
+            // Convert all values to static Strings before sending via Socket
             const plainMsg = {
                 _id: newMessage._id,
                 sender: String(newMessage.sender),

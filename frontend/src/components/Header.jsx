@@ -5,14 +5,12 @@ import { AuthContext } from '../context/AuthContext';
 import Swal from 'sweetalert2'; 
 
 const Header = ({ searchTerm, setSearchTerm }) => {
-  // Get user info and logout function from AuthContext
   const { user, logout } = useContext(AuthContext);
   const [showDropdown, setShowDropdown] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Function to handle logout with confirmation
   const handleLogout = () => {
     setShowDropdown(false); 
 
@@ -28,6 +26,8 @@ const Header = ({ searchTerm, setSearchTerm }) => {
     }).then((result) => {
       if (result.isConfirmed) {
         logout(); 
+        navigate('/'); 
+
         const Toast = Swal.mixin({
           toast: true,
           position: 'top-end',
@@ -43,11 +43,6 @@ const Header = ({ searchTerm, setSearchTerm }) => {
     });
   };
 
-  /**
-   * [NEW LOGIC] Function to check authentication before navigating
-   * If user is not logged in, show a warning alert.
-   * If logged in, proceed to the target path.
-   */
   const handleProtectedNavigation = (path, featureName) => {
     if (!user) {
       Swal.fire({
@@ -68,7 +63,6 @@ const Header = ({ searchTerm, setSearchTerm }) => {
     }
   };
 
-  // Sync search bar input with the Global Search state
   const handleSearchChange = (e) => {
       const value = e.target.value;
       if (setSearchTerm) {
@@ -83,7 +77,7 @@ const Header = ({ searchTerm, setSearchTerm }) => {
     <header
       style={{
         backgroundColor: '#ffffff',
-        padding: '16px 40px',
+        padding: '16px 20px', // Giảm padding 2 bên để thân thiện với mobile
         borderBottom: '1px solid #e0e0e0',
         position: 'sticky',
         top: 0,
@@ -93,53 +87,52 @@ const Header = ({ searchTerm, setSearchTerm }) => {
     >
       <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column' }}>
         
-        {/* Row 1: Logo, Search and Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px' }}>
+        {/* [MODIFIED] Added className "header-row-1" for responsiveness */}
+        <div className="header-row-1" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px' }}>
           
           {/* Brand Logo */}
-          <Link to="/" style={{ textDecoration: 'none', cursor: 'pointer' }}>
-            <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 'bold', color: '#ff6b00' }}>
-              CookWeb 👩🏻‍🍳
-            </h1>
-          </Link>
+          <div className="header-logo">
+              <Link to="/" style={{ textDecoration: 'none', cursor: 'pointer' }}>
+                <h1 style={{ margin: 0, fontSize: '32px', fontWeight: 'bold', color: '#ff6b00' }}>
+                  CookWeb 👩🏻‍🍳
+                </h1>
+              </Link>
+          </div>
 
           {/* Global Search Input */}
-          <div style={{ flex: 1, maxWidth: '500px', position: 'relative' }}>
+          <div className="header-search" style={{ flex: 1, maxWidth: '500px', position: 'relative' }}>
             <input 
                 type="text" 
                 placeholder="Search recipes..." 
                 value={searchTerm || ''}
                 onChange={handleSearchChange}
-                style={{ width: '100%', padding: '12px 20px 12px 48px', fontSize: '16px', border: '1px solid #ccc', borderRadius: '9999px', outline: 'none' }} 
+                style={{ width: '100%', padding: '12px 20px 12px 48px', fontSize: '16px', border: '1px solid #ccc', borderRadius: '9999px', outline: 'none', boxSizing: 'border-box' }} 
             />
             <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }}>🔍</span>
           </div>
 
           {/* Navigation and User Icons */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             
-            {/* Create Recipe Button (Also Protected) */}
             <button 
               onClick={() => handleProtectedNavigation('/create-recipe', 'Create Recipe')}
-              style={{ backgroundColor: '#ff6b00', color: 'white', padding: '10px 24px', borderRadius: '9999px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
+              style={{ backgroundColor: '#ff6b00', color: 'white', padding: '10px 20px', borderRadius: '9999px', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
             >
-              + Create new recipe
+              <span className="hide-text-mobile">+ Create new</span><span style={{ display: 'none' }} className="show-on-mobile">+</span>
             </button>
 
-             <Link to="/marketplace" style={{ backgroundColor: '#ff6b00', color: 'white', padding: '10px 24px', borderRadius: '9999px', fontWeight: 'bold', textDecoration: 'none' }}>
-              Marketplace
+             <Link to="/marketplace" style={{ backgroundColor: '#ff6b00', color: 'white', padding: '10px 20px', borderRadius: '9999px', fontWeight: 'bold', textDecoration: 'none' }}>
+              Market
             </Link>
 
-            {/* Cart Icon (Protected) */}
             <div 
                 onClick={() => handleProtectedNavigation('/cart', 'Cart')}
-                style={{ cursor: 'pointer', fontSize: '22px', marginRight: '15px', position: 'relative' }}
+                style={{ cursor: 'pointer', fontSize: '22px', position: 'relative' }}
                 title="Shopping Cart"
             >
                 🛒
             </div>
 
-            {/* Chat/Message Icon (Protected) */}
             <div 
                 onClick={() => handleProtectedNavigation('/messages', 'Chat')}
                 style={{ cursor: 'pointer', fontSize: '22px', position: 'relative' }}
@@ -150,7 +143,6 @@ const Header = ({ searchTerm, setSearchTerm }) => {
 
             {user ? (
               <div style={{ position: 'relative' }}>
-                {/* User Dropdown Toggle */}
                 <div 
                   onClick={() => setShowDropdown(!showDropdown)}
                   style={{ 
@@ -166,7 +158,7 @@ const Header = ({ searchTerm, setSearchTerm }) => {
                           {user.username?.charAt(0).toUpperCase()}
                       </div>
                   )}
-                  <span>{user.username}</span> 
+                  <span className="hide-text-mobile">{user.username}</span> 
                   <span style={{ fontSize: '12px' }}>▼</span>
                 </div>
 
@@ -177,94 +169,34 @@ const Header = ({ searchTerm, setSearchTerm }) => {
                     backgroundColor: 'white', boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                     borderRadius: '8px', overflow: 'hidden', border: '1px solid #eee', zIndex: 1100
                   }}>
-                    <Link 
-                        to={`/user/${user?._id || user?.id}`} 
-                        onClick={() => setShowDropdown(false)} 
-                        style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #f0f0f0', transition: 'background 0.2s' }} 
-                        onMouseEnter={(e) => e.target.style.background = '#f9f9f9'} 
-                        onMouseLeave={(e) => e.target.style.background = 'white'}
-                    >
-                        📂 My Profile
-                    </Link>
-                    <Link to="/favorites" onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#ff4d4f', borderBottom: '1px solid #f0f0f0', fontWeight: 'bold' }} onMouseEnter={(e) => e.target.style.background = '#f9f9f9'} onMouseLeave={(e) => e.target.style.background = 'white'}>
-                        ❤️ My Favorites
-                    </Link>
-
-                    <Link to="/my-orders" style={{ display: 'block', padding: '10px 15px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #eee' }} onClick={() => setShowDropdown(false)}>
-                      📦 My Orders
-                    </Link>
-
-                    <Link to="/manage-sales" style={{ display: 'block', padding: '10px 15px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #eee' }} onClick={() => setShowDropdown(false)}>
-                      🏪 Store Sales
-                    </Link>
-                    
-                    <Link to="/manage-categories" onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #f0f0f0', transition: 'background 0.2s' }} onMouseEnter={(e) => e.target.style.background = '#f9f9f9'} onMouseLeave={(e) => e.target.style.background = 'white'}>
-                      🏷️ Manage Categories
-                    </Link>
-
-                    <Link to="/manage-recipes" onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #f0f0f0', transition: 'background 0.2s' }} onMouseEnter={(e) => e.target.style.background = '#f9f9f9'} onMouseLeave={(e) => e.target.style.background = 'white'}>
-                      🍳 Manage Recipes
-                    </Link>
+                    <Link to={`/user/${user?._id || user?.id}`} onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #f0f0f0' }}>📂 My Profile</Link>
+                    <Link to="/favorites" onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#ff4d4f', borderBottom: '1px solid #f0f0f0', fontWeight: 'bold' }}>❤️ My Favorites</Link>
+                    <Link to="/my-orders" onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '10px 15px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #eee' }}>📦 My Orders</Link>
+                    <Link to="/manage-sales" onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '10px 15px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #eee' }}>🏪 Store Sales</Link>
+                    <Link to="/manage-categories" onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #f0f0f0' }}>🏷️ Manage Categories</Link>
+                    <Link to="/manage-recipes" onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#333', borderBottom: '1px solid #f0f0f0' }}>🍳 Manage Recipes</Link>
 
                     {user?.role === 'admin' && (
                     <>
-                      <Link 
-                        to="/admin/dashboard" 
-                        onClick={() => setShowDropdown(false)}
-                        style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#28a745', borderBottom: '1px solid #f0f0f0', fontWeight: 'bold' }}
-                      >
-                        📊 Admin Dashboard
-                      </Link>
-
-                      <Link 
-                        to="/admin/users" 
-                        onClick={() => setShowDropdown(false)}
-                        style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#6f42c1', borderBottom: '1px solid #f0f0f0', fontWeight: 'bold' }}
-                      >
-                        👥 Manage Users
-                      </Link>
-
-                      <Link 
-                        to="/admin/moderation" 
-                        onClick={() => setShowDropdown(false)}
-                        style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#007bff', borderBottom: '1px solid #f0f0f0', fontWeight: 'bold' }}
-                      >
-                        🛡️ Moderate Posts
-                      </Link>
-                      
-                      <Link 
-                        to="/admin/ingredients" 
-                        onClick={() => setShowDropdown(false)}
-                        style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#ff6b00', borderBottom: '1px solid #f0f0f0', fontWeight: 'bold' }}
-                      >
-                        🛒 Base Ingredients Inventory
-                      </Link>
+                      <Link to="/admin/dashboard" onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#28a745', borderBottom: '1px solid #f0f0f0', fontWeight: 'bold' }}>📊 Admin Dashboard</Link>
+                      <Link to="/admin/users" onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#6f42c1', borderBottom: '1px solid #f0f0f0', fontWeight: 'bold' }}>👥 Manage Users</Link>
+                      <Link to="/admin/moderation" onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#007bff', borderBottom: '1px solid #f0f0f0', fontWeight: 'bold' }}>🛡️ Moderate Posts</Link>
+                      <Link to="/admin/ingredients" onClick={() => setShowDropdown(false)} style={{ display: 'block', padding: '12px 16px', textDecoration: 'none', color: '#ff6b00', borderBottom: '1px solid #f0f0f0', fontWeight: 'bold' }}>🛒 Base Ingredients</Link>
                     </>
                   )}
 
-                    <div onClick={handleLogout} style={{ display: 'block', padding: '12px 16px', cursor: 'pointer', color: '#dc3545', fontWeight: 'bold', transition: 'background 0.2s' }} onMouseEnter={(e) => e.target.style.background = '#fff5f5'} onMouseLeave={(e) => e.target.style.background = 'white'}>
-                      🚪 Logout
-                    </div>
+                    <div onClick={handleLogout} style={{ display: 'block', padding: '12px 16px', cursor: 'pointer', color: '#dc3545', fontWeight: 'bold' }}>🚪 Logout</div>
                   </div>
                 )}
               </div>
             ) : (
-              <Link to="/login" style={{ border: '1px solid #ddd', borderRadius: '9999px', padding: '8px 20px', color: '#333', textDecoration: 'none', fontWeight: '500' }}>
-                Login
-              </Link>
+              <Link to="/login" style={{ border: '1px solid #ddd', borderRadius: '9999px', padding: '8px 20px', color: '#333', textDecoration: 'none', fontWeight: '500' }}>Login</Link>
             )}
           </div>
         </div>
         
         {/* Row 2: Secondary Navigation Links */}
-        {/* <nav style={{ marginTop: '16px', textAlign: 'center' }}>
-          <ul style={{ display: 'inline-flex', listStyle: 'none', margin: 0, padding: 0, gap: '40px', fontSize: '15px', color: '#555', fontWeight: '500' }}>
-            <li style={{ cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e)=>e.target.style.color='#ff6b00'} onMouseLeave={(e)=>e.target.style.color='#555'}>Premium</li>
-            <li style={{ cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e)=>e.target.style.color='#ff6b00'} onMouseLeave={(e)=>e.target.style.color='#555'}>Challenges</li>
-            <li style={{ cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e)=>e.target.style.color='#ff6b00'} onMouseLeave={(e)=>e.target.style.color='#555'}>Gifts</li>
-            <li style={{ cursor: 'pointer', transition: 'color 0.2s' }} onMouseEnter={(e)=>e.target.style.color='#ff6b00'} onMouseLeave={(e)=>e.target.style.color='#555'}>Recipe Vault</li>
-          </ul>
-        </nav> */}
+       
       </div>
     </header>
   );

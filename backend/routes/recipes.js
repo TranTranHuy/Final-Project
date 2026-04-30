@@ -95,7 +95,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2. POST: Post an article
+// 2. POST: Post an article (Enhanced for Admin Auto-Inventory)
 router.post('/', auth, cpUpload, async (req, res) => {
   try {
       if (!req.body.title || !req.body.instructions) return res.status(400).json({ message: 'Missing information' });
@@ -105,6 +105,7 @@ router.post('/', auth, cpUpload, async (req, res) => {
           try { extendedIngredients = JSON.parse(req.body.extendedIngredients); } catch (e) {}
       }
 
+      // Handle ingredient images
       if (req.files && req.files['ingredientImages']) {
           const ingFiles = req.files['ingredientImages'];
           let fileIndex = 0;
@@ -119,18 +120,35 @@ router.post('/', auth, cpUpload, async (req, res) => {
       }
 
       const unknownIngredients = [];
+      const isAdmin = req.user.role === 'admin';
+
+      //Check and auto-add to Base Ingredients if Admin
       for (const item of extendedIngredients) {
           if(!item.name) continue;
+          
+          const trimmedName = item.name.trim();
           const exists = await Ingredient.findOne({ 
-              name: { $regex: new RegExp(`^${item.name.trim()}$`, 'i') } 
+              name: { $regex: new RegExp(`^${trimmedName}$`, 'i') } 
           });
+
           if (!exists) {
-              unknownIngredients.push(item.name.trim());
+              if (isAdmin) {
+                  // If Admin is posting, automatically create a new Base Ingredient
+                  const newBaseIng = new Ingredient({
+                      name: trimmedName,
+                      image: item.image || '' // Use the image provided in the post
+                  });
+                  await newBaseIng.save();
+              } else {
+                  // If normal User, add to unknown list for later review
+                  unknownIngredients.push(trimmedName);
+              }
           }
       }
 
+      // Determine status: Admin's posts are approved immediately
       let status = 'pending'; 
-      if (req.user.role === 'admin' && unknownIngredients.length === 0) {
+      if (isAdmin) {
           status = 'approved';
       }
 
@@ -149,6 +167,7 @@ router.post('/', auth, cpUpload, async (req, res) => {
       const newRecipe = await recipe.save();
       res.status(201).json(newRecipe);
   } catch (err) {
+      console.error("Error creating recipe:", err);
       res.status(400).json({ message: err.message });
   }
 });
@@ -194,7 +213,10 @@ router.put('/:id/remove-unknown-ingredient', auth, async (req, res) => {
 // 5. GET SINGLE
 router.get('/:id', async (req, res) => {
   try {
-      const recipe = await Recipe.findById(req.params.id).populate('user', 'username');
+      const recipe = await Recipe.findById(req.params.id)
+          .populate('user', 'username')
+          .populate('comments.user', 'username avatar'); 
+          
       if (!recipe) return res.status(404).json({ message: 'Not found' });
       res.json(recipe);
   } catch (err) {
@@ -352,6 +374,7 @@ router.post('/:id/comment', auth, async (req, res) => {
         const newComment = {
             user: currentUser._id,
             username: currentUser.username,
+            avatar: currentUser.avatar,
             text: req.body.text
         };
 
@@ -363,7 +386,9 @@ router.post('/:id/comment', auth, async (req, res) => {
         recipe.comments.unshift(newComment);
         await recipe.save();
 
-        res.json(recipe.comments);
+        const updatedRecipe = await Recipe.findById(req.params.id).populate('comments.user', 'username avatar');
+
+        res.json(updatedRecipe.comments);
     } catch (error) {
         console.error('Error when adding comment:', error);
         res.status(500).json({ message: 'Server error' });

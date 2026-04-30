@@ -59,18 +59,8 @@ router.get('/sales', auth, async (req, res) => {
     }
 });
 
-// 4. Retrieve all orders (Only for Admin to view overview)
-router.get('/all', auth, async (req, res) => {
-    try {
-        if (req.user.role !== 'admin') return res.status(403).json({ message: 'You do not have permission to view all orders' });
-        const orders = await Order.find().sort({ createdAt: -1 }).populate('user', 'username');
-        res.json(orders);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error' });
-    }
-});
 
-// 5. Update status (For Authors / Sellers ONLY)
+// 4. Update status (For Authors / Sellers ONLY)
 router.put('/:id/status', auth, async (req, res) => {
     try {
         const order = await Order.findById(req.params.id);

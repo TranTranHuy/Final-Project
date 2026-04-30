@@ -57,7 +57,7 @@ const Cart = () => {
           showCancelButton: true,
           confirmButtonColor: '#d33',
           cancelButtonColor: '#999',
-          confirmButtonText: 'Có, xóa đi',
+          confirmButtonText: 'Sure, remove it',
           cancelButtonText: 'Keep it'
       }).then(async (result) => {
           if (result.isConfirmed) {

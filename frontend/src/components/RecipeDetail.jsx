@@ -10,7 +10,7 @@ const RecipeDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  //Declare information to retrieve the logged-in user.
+  // Declare information to retrieve the logged-in user.
   const { user } = useContext(AuthContext);
   const [recipe, setRecipe] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -21,7 +21,7 @@ const RecipeDetail = () => {
   const [comments, setComments] = useState([]);
   const [commentText, setCommentText] = useState('');
 
-useEffect(() => {
+  useEffect(() => {
     const fetchRecipe = async () => {
       try {
         const response = await axios.get(`http://localhost:5000/api/recipes/${id}`);
@@ -117,6 +117,9 @@ useEffect(() => {
   if (error) return <p style={{ textAlign: 'center', marginTop: '100px', color: 'red', fontSize: '18px' }}>{error}</p>;
   if (!recipe) return <p style={{ textAlign: 'center', marginTop: '100px', fontSize: '18px' }}>The recipe doesn't exist.</p>;
 
+  // Check if current user has liked this recipe (supporting both _id and id)
+  const isLikedByMe = user && (likes?.includes(user._id) || likes?.includes(user.id));
+
   return (
     <div style={{ maxWidth: '900px', margin: '60px auto', padding: '30px', background: '#ffffff', borderRadius: '16px', boxShadow: '0 10px 30px rgba(0,0,0,0.1)' }}>
       {/* Back Button */}
@@ -147,7 +150,7 @@ useEffect(() => {
             />
         ) : (
             <div style={{ width: '100%', height: '100%', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#888' }}>
-                No photos available.h
+                No photos available
             </div>
         )}
       </div>
@@ -249,8 +252,8 @@ useEffect(() => {
       {/* THE LIKE & COMMENT AREA IS LOCATED INSIDE THE MAIN DIV TAG */}
       <div style={{ marginTop: '40px', borderTop: '2px solid #eee', paddingTop: '20px' }}>
           
-          <button onClick={handleLike} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: likes?.includes(user?._id) ? '#ffe0e0' : '#f5f5f5', color: likes?.includes(user?._id) ? '#ff4d4f' : '#666', border: 'none', borderRadius: '30px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold', transition: '0.2s' }}>
-              {likes?.includes(user?._id) ? '❤️ Liked' : '🤍 Like'} ({likes?.length || 0})
+          <button onClick={handleLike} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 20px', background: isLikedByMe ? '#ffe0e0' : '#f5f5f5', color: isLikedByMe ? '#ff4d4f' : '#666', border: 'none', borderRadius: '30px', cursor: 'pointer', fontSize: '16px', fontWeight: 'bold', transition: '0.2s' }}>
+              {isLikedByMe ? '❤️ Liked' : '🤍 Like'} ({likes?.length || 0})
           </button>
 
           <div style={{ marginTop: '30px' }}>
@@ -268,26 +271,31 @@ useEffect(() => {
               </form>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                  {comments?.map((cmt, idx) => (
-                      <div key={idx} style={{ display: 'flex', gap: '15px', background: '#f9f9f9', padding: '15px', borderRadius: '12px' }}>
-                          <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#ccc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#fff' }}>
-                              {cmt.username?.charAt(0).toUpperCase()}
+                  {comments?.map((cmt, idx) => {
+                      const avatarUrl = cmt.avatar || cmt.user?.avatar;
+
+                      return (
+                          <div key={idx} style={{ display: 'flex', gap: '15px', background: '#f9f9f9', padding: '15px', borderRadius: '12px' }}>
+                              <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#ccc', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', color: '#fff', overflow: 'hidden' }}>
+                                  {avatarUrl ? (
+                                      <img src={`http://localhost:5000${avatarUrl}`} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  ) : (
+                                      cmt.username?.charAt(0).toUpperCase()
+                                  )}
+                              </div>
+                              <div>
+                                  <b style={{ color: '#333' }}>{cmt.username}</b>
+                                  <span style={{ fontSize: '12px', color: '#999', marginLeft: '10px' }}>{new Date(cmt.createdAt || Date.now()).toLocaleDateString('vi-VN')}</span>
+                                  <p style={{ margin: '5px 0 0 0', color: '#555' }}>{cmt.text}</p>
+                              </div>
                           </div>
-                          <div>
-                              <b style={{ color: '#333' }}>{cmt.username}</b>
-                              <span style={{ fontSize: '12px', color: '#999', marginLeft: '10px' }}>{new Date(cmt.createdAt).toLocaleDateString('vi-VN')}</span>
-                              <p style={{ margin: '5px 0 0 0', color: '#555' }}>{cmt.text}</p>
-                          </div>
-                      </div>
-                  ))}
+                      );
+                  })}
               </div>
           </div>
       </div>
     </div>
-    
-    
   );
-
 };
 
 export default RecipeDetail;

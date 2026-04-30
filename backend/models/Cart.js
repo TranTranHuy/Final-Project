@@ -7,7 +7,7 @@ const CartSchema = new mongoose.Schema({
     name: { type: String, required: true },
     price: { type: Number, required: true },
     image: { type: String },
-    sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // [IMPORTANT] Save the seller ID
+    sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }, // Save the seller ID
     sellerName: { type: String }, // Seller's name
     recipeId: { type: mongoose.Schema.Types.ObjectId, ref: 'Recipe' }, // Purchase from which recipe
     quantity: { type: Number, default: 1 }
