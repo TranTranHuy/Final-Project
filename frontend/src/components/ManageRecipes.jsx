@@ -115,11 +115,15 @@ const ManageRecipes = () => {
                 <td style={{ border: '1px solid #ddd', padding: '12px' }}>{recipe.title}</td>
                 <td style={{ border: '1px solid #ddd', padding: '12px' }}>{recipe.category || '-'}</td>
                 
-                {user?.role === 'admin' && (
-                  <td style={{ border: '1px solid #ddd', padding: '12px', fontSize: '12px', color: '#666' }}>
-                    {typeof recipe.user === 'object' ? recipe.user._id : recipe.user || 'Anonymous'}
-                  </td>
-                )}
+              {user?.role === 'admin' && (
+                <td style={{ border: '1px solid #ddd', padding: '12px', fontSize: '12px', color: '#666' }}>
+                  {recipe.user ? (
+                    typeof recipe.user === 'object' ? (recipe.user.username || recipe.user._id) : recipe.user
+                  ) : (
+                    <span style={{ color: 'red' }}>The user has been deleted</span>
+                  )}
+                </td>
+              )}
 
                 <td style={{ border: '1px solid #ddd', padding: '12px', textAlign: 'center' }}>
                   <button 

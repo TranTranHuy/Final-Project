@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const User = require('../models/User');
 const Recipe = require('../models/Recipe');
 const Order = require('../models/Order');
+const Ingredient = require('../models/Ingredient');
 
 const adminAuth = (req, res, next) => {
     if (req.user.role !== 'admin') return res.status(403).json({ message: 'Access denied' });
@@ -93,17 +94,28 @@ router.put('/users/:id/role', auth, adminAuth, async (req, res) => {
 // ==========================================
 router.delete('/users/:id', auth, adminAuth, async (req, res) => {
     try {
-        const user = await User.findById(req.params.id);
+        const userId = req.params.id;
+        const user = await User.findById(userId);
+        
         if (!user) return res.status(404).json({ message: 'User not found' });
         
-        // Prevent admin from deleting themselves
-        if (user._id.toString() === req.user.id) {
+        if (userId === req.user.id) {
             return res.status(400).json({ message: 'You cannot delete yourself' });
         }
-        
-        await User.findByIdAndDelete(req.params.id);
-        res.json({ message: 'User deleted successfully' });
+
+    
+        await Ingredient.deleteMany({ creator: userId }); 
+
+        await Recipe.updateMany(
+            { user: userId },
+            { $set: { extendedIngredients: [] } } 
+        );
+
+        await User.findByIdAndDelete(userId);
+
+        res.json({ message: 'User deleted successfully, marketplace items cleared, and recipes updated!' });
     } catch (err) {
+        console.error(err);
         res.status(500).send('Server Error');
     }
 });
