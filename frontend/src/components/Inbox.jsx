@@ -3,9 +3,8 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 import ChatBox from './ChatBox';
-import { io } from 'socket.io-client'; // [FIXED] Import correctly
+import { io } from 'socket.io-client';
 
-// Initialize Socket
 const socket = io('http://localhost:5000', {
     autoConnect: true,
     reconnection: true
@@ -16,57 +15,43 @@ const Inbox = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
-
   const { user } = useContext(AuthContext);
 
   const fetchConversations = async () => {
     try {
         const token = localStorage.getItem('token');
+        if (!token) return;
         const res = await axios.get('http://localhost:5000/api/messages/conversations', {
             headers: { 'x-auth-token': token }
         });
         setConversations(res.data);
     } catch (err) {
-        console.error(err);
+        console.error('Error fetching conversations:', err);
     }
   };
 
-  // [MOST IMPORTANT] CONNECTION AND SAFE IDENTIFICATION LOGIC
   useEffect(() => {
-      if (!user) return;
-      const myId = String(user._id || user.id);
+    if (!user) return;
+    
+    // Initial fetch when component mounts or page reloads
+    fetchConversations();
 
-      // Handler when Socket connects successfully
-      const handleConnect = () => {
-          console.log("🟢 Frontend Socket connected successfully!", socket.id);
-          socket.emit('setup', myId); // Identify into room
-      };
+    const myId = String(user._id || user.id);
+    socket.emit('setup', myId);
 
-      // If already connected, call immediately
-      if (socket.connected) {
-          handleConnect();
-      }
+    // Refresh list when a new message is received
+    const handleReceiveMessage = () => {
+        fetchConversations(); 
+    };
 
-      // Listen for (re)connection events
-      socket.on('connect', handleConnect);
+    socket.on('receiveMessage', handleReceiveMessage);
 
-      // Listen for new messages to reset left list
-      const handleReceiveMessage = (msg) => {
-          console.log("📥 Inbox received message signal from Server:", msg);
-          fetchConversations();
-      };
-      socket.on('receiveMessage', handleReceiveMessage);
-
-      // Call first time to get list
-      fetchConversations();
-
-      return () => {
-          socket.off('connect', handleConnect);
-          socket.off('receiveMessage', handleReceiveMessage);
-      };
+    return () => {
+        socket.off('receiveMessage', handleReceiveMessage);
+    };
   }, [user]);
 
-  // Search
+  // User search logic
   useEffect(() => {
       const searchUsers = async () => {
           if (!searchQuery.trim()) {
@@ -80,7 +65,7 @@ const Inbox = () => {
               });
               setSearchResults(res.data);
           } catch (err) {
-              console.error(err);
+              console.error('Search error:', err);
           }
       };
       const timerId = setTimeout(() => searchUsers(), 300);
@@ -89,24 +74,23 @@ const Inbox = () => {
 
   const handleStartNewChat = (newUser) => {
       setSelectedUser(newUser);
-      setSearchQuery('');       
+      setSearchQuery('');      
       setSearchResults([]);     
 
-      const exists = conversations.find(c => c.otherUser._id === newUser._id);
+      const exists = conversations.find(c => String(c.otherUser._id) === String(newUser._id));
       if (!exists) {
-          setConversations([{ otherUser: newUser, lastMessage: 'Start conversation...' }, ...conversations]);
+          setConversations([{ otherUser: newUser, lastMessage: 'Start a conversation...' }, ...conversations]);
       }
   };
 
   return (
     <div style={{ maxWidth: '1000px', margin: '40px auto', display: 'flex', gap: '20px', height: '80vh' }}>
-        {/* LEFT COLUMN */}
         <div style={{ flex: 1, background: '#fff', borderRadius: '12px', border: '1px solid #eee', display: 'flex', flexDirection: 'column' }}>
             <div style={{ padding: '20px', borderBottom: '1px solid #eee', background: '#fcfcfc', borderRadius: '12px 12px 0 0' }}>
                 <h3 style={{ margin: '0 0 15px 0' }}>Inbox</h3>
                 <input 
                     type="text" 
-                    placeholder="🔍 Search users..." 
+                    placeholder="Search users..." 
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     style={{ width: '100%', padding: '10px 15px', borderRadius: '20px', border: '1px solid #ccc', outline: 'none' }}
@@ -115,18 +99,17 @@ const Inbox = () => {
 
             <div style={{ overflowY: 'auto', flex: 1, position: 'relative' }}>
                 {searchResults.length > 0 && (
-                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: '#fff', zIndex: 10 }}>
-                        <p style={{ margin: 0, padding: '10px 20px', fontSize: '12px', background: '#f5f5f5' }}>SEARCH RESULTS</p>
+                    <div style={{ position: 'absolute', top: 0, left: 0, right: 0, background: '#fff', zIndex: 10, boxShadow: '0 4px 6px rgba(0,0,0,0.1)' }}>
                         {searchResults.map((su) => (
-                            <div key={su._id} onClick={() => handleStartNewChat(su)} style={{ padding: '15px 20px', cursor: 'pointer', borderBottom: '1px solid #eee', display: 'flex', gap: '10px' }}>
+                            <div key={su._id} onClick={() => handleStartNewChat(su)} style={{ padding: '15px 20px', cursor: 'pointer', borderBottom: '1px solid #eee' }}>
                                 <b>{su.username}</b>
                             </div>
                         ))}
                     </div>
                 )}
 
-                {conversations.length === 0 && searchResults.length === 0 ? (
-                    <p style={{ textAlign: 'center', color: '#999', marginTop: '30px' }}>Inbox empty</p>
+                {conversations.length === 0 ? (
+                    <p style={{ textAlign: 'center', color: '#999', marginTop: '30px' }}>No conversations yet</p>
                 ) : (
                     conversations.map((conv) => (
                         <div 
@@ -139,14 +122,10 @@ const Inbox = () => {
                             }}
                         >
                             {conv.otherUser.avatar ? (
-                                <img 
-                                    src={`http://localhost:5000${conv.otherUser.avatar}`} 
-                                    alt="avatar" 
-                                    style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} 
-                                />
+                                <img src={`http://localhost:5000${conv.otherUser.avatar}`} alt="avatar" style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }} />
                             ) : (
                                 <span style={{ minWidth: '40px', height: '40px', borderRadius: '50%', background: '#eee', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}>
-                                    {conv.otherUser.username.charAt(0).toUpperCase()}
+                                    {conv.otherUser.username?.charAt(0).toUpperCase()}
                                 </span>
                             )}
                             <div style={{ overflow: 'hidden' }}>
@@ -161,7 +140,6 @@ const Inbox = () => {
             </div>
         </div>
 
-        {/* RIGHT COLUMN */}
         <div style={{ flex: 2, background: '#f9f9f9', borderRadius: '12px', border: '1px solid #eee', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
             {selectedUser ? (
                 <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -176,7 +154,7 @@ const Inbox = () => {
             ) : (
                 <div style={{ textAlign: 'center', color: '#999' }}>
                     <div style={{ fontSize: '50px', marginBottom: '10px' }}>💬</div>
-                    <p>Select a conversation to start</p>
+                    <p>Select a user to start chatting</p>
                 </div>
             )}
         </div>
